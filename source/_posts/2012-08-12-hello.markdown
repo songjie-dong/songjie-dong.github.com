@@ -1,0 +1,102 @@
+---
+layout: post
+title: "Hello"
+date: 2012-08-12 09:51
+comments: true
+categories: 
+---
+
+
+介于微博的极度不河蟹,改为上推,看到某人的blog发现自己out了,现在都用github搭blog了,于是我就折腾了一个,安了个新家,以下内容完全是对markdown语法的练习
+
+折腾了半天遇到个编码问题,不知道为啥ruby默认用了GBK,搞了半天发现term设置的GBK,而我一般用iterm...忘了这个点啊.....
+
+
+
+编码
+*****
+&copy;
+
+AT&amp;T
+
+标题
+*****
+
+this is title 1
+=====
+
+this is title 2
+-----
+
+# this is title 1
+## this is title 2
+### this is title 3
+#### this is title 4
+##### this is title 5
+###### this is title 6
+
+缩进
+*****
+> this is a blockquote
+>> test
+
+> this is a blockquote
+with lazy mode
+
+列表
+****
+
+*    test
+*    test
+*    test
+
+
+
++ test
++ test
++ test
+
+
+
+- test
+- test
+- test
+
+
+
+1. 1
+2. 2
+3. 3
+
+
+
+1986. so funny beginning
+
+1986\. you can escape it
+
+***
+	print "hello world!"
+	
+``` python
+print "hello world!"
+```
+
+horizontal rules
+--------
+********
+- - - 
+* * *
+
+link
+---
+[I'm a link](http://dongsongjie.cn "Songjie Dong's homepage")
+	
+
+强调
+----------
+
+
+
+
+
+
