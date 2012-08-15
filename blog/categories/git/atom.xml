@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[All Things Coding]]></title>
-  <link href="http://songjie-dong.github.com/atom.xml" rel="self"/>
+  <title><![CDATA[Category: git | All Things Coding]]></title>
+  <link href="http://songjie-dong.github.com/blog/categories/git/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
   <updated>2012-08-16T00:26:00+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
@@ -40,103 +40,6 @@
 <hr />
 
 <p>先写到这,后续补充</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hello]]></title>
-    <link href="http://songjie-dong.github.com/blog/2012/08/12/hello/"/>
-    <updated>2012-08-12T09:51:00+08:00</updated>
-    <id>http://songjie-dong.github.com/blog/2012/08/12/hello</id>
-    <content type="html"><![CDATA[<p>介于微博的极度不河蟹,改为上推,看到某人的blog发现自己out了,现在都用github搭blog了,于是我就折腾了一个,安了个新家,以下内容完全是对markdown语法的练习</p>
-
-<p>折腾了半天遇到个编码问题,不知道为啥ruby默认用了GBK,搞了半天发现term设置的GBK,而我一般用iterm&#8230;忘了这个点啊&#8230;..</p>
-
-<p>编码</p>
-
-<hr />
-
-<p>&copy;</p>
-
-<p>AT&amp;T</p>
-
-<p>标题</p>
-
-<hr />
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h3>this is title 3</h3>
-
-<h4>this is title 4</h4>
-
-<h5>this is title 5</h5>
-
-<h6>this is title 6</h6>
-
-<p>缩进</p>
-
-<hr />
-
-<blockquote><p>this is a blockquote</p>
-
-<blockquote><p>test</p></blockquote>
-
-<p>this is a blockquote
-with lazy mode</p></blockquote>
-
-<p>列表</p>
-
-<hr />
-
-<ul>
-<li> test</li>
-<li> test</li>
-<li><p> test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>1</p></li>
-<li>2</li>
-<li><p>3</p></li>
-<li><p>so funny beginning</p></li>
-</ul>
-
-
-<p>1986. you can escape it</p>
-
-<hr />
-
-<pre><code>print "hello world!"
-</code></pre>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">print</span> <span class="s">&quot;hello world!&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>horizontal rules</h2>
-
-<hr />
-
-<hr />
-
-<hr />
-
-<h2>link</h2>
-
-<p><a href="http://dongsongjie.cn" title="Songjie Dong's homepage">I&#8217;m a link</a></p>
-
-<h2>强调</h2>
 ]]></content>
   </entry>
   
