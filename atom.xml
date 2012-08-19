@@ -4,7 +4,7 @@
   <title><![CDATA[All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-08-16T15:55:45+08:00</updated>
+  <updated>2012-08-19T16:16:37+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -14,25 +14,73 @@
 
   
   <entry>
+    <title type="html"><![CDATA[阅读软件体验]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/08/19/yue-du-ruan-jian-ti-yan/"/>
+    <updated>2012-08-19T14:07:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/08/19/yue-du-ruan-jian-ti-yan</id>
+    <content type="html"><![CDATA[<p>最近一直在使用阅读软件,一直在用的网易云阅读,试用了zaker,体验了flipboard,记录一下自己的体会</p>
+
+<h2>使用需求</h2>
+
+<p>看书,涉及自传,心理学,偏通俗一点的哲学书,名著等等(碎片时间和非舒适环境阅读),看资讯,涉及科技,工业设计,互联网,创业,技术,看英文,最好有高质量的英语资讯,这样英文阅读和知识获取两不误,有一定的社交功能,比如分享,收藏,但不喜欢拿它看微博和blog,看微博有专门的工具,看blog需要块状时间用来记录和整理知识.</p>
+
+<h2>使用经过</h2>
+
+<ul>
+<li><p>网易云阅读
+这款软件是最早在手机上安装的,一直在使用,内容很全面,报纸,新闻,资讯,书籍,社交信息等等,功能上很全面,界面很传统(在国内,同类应用很多都长得很像,前两天我在手机上用app看微博,无意发现app的界面和咱公司开发的xx应用从界面布局到颜色到交互都几乎一样,最近有些不同了,因为咱抄袭了国外的应用),书籍不够丰富,估计版权问题很难解决,能分享,很收藏,满足需求.</p>
+
+<p>用它我利用坐火车时间看完了钢铁是怎样练成的(没看太明白,觉悟不够啊),阅读了一些互联网资讯,社交功能几乎没用,最近用来看一些英文资讯,有些小bug,不过不影响整体印象</p></li>
+<li><p>zaker
+功能几乎与网易雷同,内容有微小的差异,主要是网易可以整合自己的资源,比如网易公开课,社交功能很不方便,体验较差,从名字和App的界面风格来比较,比网易更<strong>怀型</strong>,很现代,当然从阅读内容的订阅排名来看,也确实现代,美空流排名普遍靠前</p>
+
+<p>只是试用了一下,除界面眼前一亮,没什么特别的,感觉用户与之互动较少,很少有人留言,这样信息的&#8221;协同过滤&#8221;就无法发挥作用了.</p></li>
+<li><p>flipboard
+交互体验最好&#8211;道法自然,内容可DIY,貌似没有书籍阅读,信息质量高.</p></li>
+</ul>
+
+
+<h2>分析&amp;比较</h2>
+
+<p>网易和zaker的核心理念在平台加整合辅以社交,它们都提供了一个阅读的入口,通过线下合作的方式与各种媒体,社交工具整合来提供信息,提供了基本的社交功能,比如分享,评论等.现阶段感觉最大的问题在于信息的数量和质量难以平衡,由于缺乏&#8221;协同过滤&#8221;,往往只能看标题来筛选文章,比较浪费时间,不适合阅读兴趣广泛的人,信息质量差导致碎片时间的利用率较低.</p>
+
+<p>flipboard,社交性较强,信息经过了社交化的&#8221;智能&#8221;过滤,质量较高,交互好,界面美,可以DIY,推荐试用~</p>
+
+<h2>总结</h2>
+
+<p>这一比较,俺选择进一步试用flipboard,多嘴一句,巴神投资传统媒体我感觉很对的啊,借卡斯帕罗夫的一句话&#8221;有些事只能人做的好,有些事要人和电脑合作才能更好&#8221;</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Harvard Positive Psychology]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/08/19/harvard-positive-psychology/"/>
+    <updated>2012-08-19T14:06:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/08/19/harvard-positive-psychology</id>
+    <content type="html"><![CDATA[
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[Thinking in git]]></title>
     <link href="http://songjie-dong.github.com/blog/2012/08/15/thinking-in-git/"/>
     <updated>2012-08-15T23:57:00+08:00</updated>
     <id>http://songjie-dong.github.com/blog/2012/08/15/thinking-in-git</id>
     <content type="html"><![CDATA[<h1>前言</h1>
 
-<p>  最近工作中用到git,本着遇到什么学什么的精神,最近看了看git相关的资料和一些blog,将一些学习方法和结论总结一下.</p>
+<p>最近工作中用到git,本着遇到什么学什么的精神,最近看了看git相关的资料和一些blog,将一些学习方法和结论总结一下.</p>
 
-<h2>头疼的命令</h2>
+<h3>头疼的命令</h3>
 
-<p>  在初次使用git时,我感觉这东西是个不太易用的东东,概念复杂,命令复杂(这还是被封装过的,用底层命令完全得理解整个系统的来龙去脉才有可能).</p>
+<p>在初次使用git时,我感觉这东西是个不太易用的东东,概念复杂,命令复杂(这还是被封装过的,用底层命令完全得理解整个系统的来龙去脉才有可能).</p>
 
-<p>  很多blog会介绍一些fast food,比如本地仓库和远程仓库diff,然后贴个命令上去&#8230;.有些时候命令未必靠谱(原因是git命令复杂,贴出来的命令未必真适应你的场景),最后搞的我只有祭出GUI来完成日常工作,实在是悲催.</p>
+<p>很多blog会介绍一些fast food,比如本地仓库和远程仓库diff,然后贴个命令上去&#8230;.有些时候命令未必靠谱(原因是git命令复杂,贴出来的命令未必真适应你的场景),最后搞的我只有祭出GUI来完成日常工作,实在是悲催.</p>
 
-<h2>方法 双管齐下!</h2>
+<h4>方法 双管齐下!</h4>
 
-<p>  工作中的常用命令通过查blog,man doc学习,工作时不拘泥于命令的复杂使用,而是快速学会常用命令,了解基本概念(个人觉得git社区版介绍不错<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFcQFjAB&amp;url=http%3A%2F%2Fgitbook.liuhui998.com%2F&amp;ei=SsorUIvVFoyRiQel4YDoDA&amp;usg=AFQjCNHVw05olZNWF6IDNhFykqVQNkN5wg">git社区版</a>,git pro入门看感觉一般).</p>
+<p>工作中的常用命令通过查blog,man doc学习,工作时不拘泥于命令的复杂使用,而是快速学会常用命令,了解基本概念(个人觉得git社区版介绍不错<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFcQFjAB&amp;url=http%3A%2F%2Fgitbook.liuhui998.com%2F&amp;ei=SsorUIvVFoyRiQel4YDoDA&amp;usg=AFQjCNHVw05olZNWF6IDNhFykqVQNkN5wg">git社区版</a>,git pro入门看感觉一般).</p>
 
-<p>  对于git这么久经考验的开源系统而言,不了解底层原理,和其他vcs产品的异同,设计的理念,发展过程,产品现状等等,那就算是白用了,而且芥末优秀的产品对于学习产品架构设计很有借鉴意义,对于此我个人推荐<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFoQFjAB&amp;url=http%3A%2F%2Fishare.iask.sina.com.cn%2Ff%2F23222298.html&amp;ei=WMsrULvDB6aciAevuoCgDg&amp;usg=AFQjCNGecM96Vuaa7rQGtyyGzlLNvk3hYw">The Architecture of Open Source Applications volume II</a></p>
+<p>对于git这么久经考验的开源系统而言,不了解底层原理,和其他vcs产品的异同,设计的理念,发展过程,产品现状等等,那就算是白用了,而且芥末优秀的产品对于学习产品架构设计很有借鉴意义,对于此我个人推荐<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFoQFjAB&amp;url=http%3A%2F%2Fishare.iask.sina.com.cn%2Ff%2F23222298.html&amp;ei=WMsrULvDB6aciAevuoCgDg&amp;usg=AFQjCNGecM96Vuaa7rQGtyyGzlLNvk3hYw">The Architecture of Open Source Applications volume II</a></p>
 
 <hr />
 
