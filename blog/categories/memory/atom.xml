@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: malloc | All Things Coding]]></title>
-  <link href="http://songjie-dong.github.com/blog/categories/malloc/atom.xml" rel="self"/>
+  <title><![CDATA[Category: memory | All Things Coding]]></title>
+  <link href="http://songjie-dong.github.com/blog/categories/memory/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
   <updated>2012-09-24T01:37:21+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
@@ -53,54 +53,6 @@ doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.h
 <p>stackoverflow上传言android用的新版dlmalloc,为啥不用自家的tcmalloc,我没细分析,既然开头说了android内部避免了外部碎片化的问题,故dalvik的gc未提供compact,那明显是直接使用tcmalloc更合适,而且现在手机动不动就4核,这个问题如果有机会看代码再求证.</p>
 
 <p>回过头来看jvm,为啥老有碎片呢...难道是为了顾及一次书写,到处执行.问题很多,可时间不多~,碎叫~</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[android菜鸟的吐槽3]]></title>
-    <link href="http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/"/>
-    <updated>2012-09-14T15:08:00+08:00</updated>
-    <id>http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian</id>
-    <content type="html"><![CDATA[<p>android关于dalvik的资料显得不是很全,像我这种写服务端代码写惯了的,突然换到android下面写java代码,基本也算是两眼一抹黑.</p>
-
-<p>2010 google I/O关于加入JIT的介绍,而后则很少有介绍后续的发展,搞的我很难写代码,以前的知识都成了写代码的习惯思考,而且JVM关于JIT的优化相对成熟,处于发展而不是变化的阶段,但是android的性能最佳实践中提到的东西,貌似随着版本的发布有不少的变化,所以很难作为代码优化的参考.关于gc方面的资料就更加的少,特别是涉及到细节,只能看代码和借助内部的一些debug工具,感觉上dalvik未来还会有很多的发展和改进空间..</p>
-
-<p>这几天查阅了一些关于dalvik的资料,blog,还没深入看代码,先提供一些所谓的直观感觉,后续有空在dalvik的gc部分代码基础上再记录一些细节吧.(开篇也许就是结局篇)</p>
-
-<h3>Algorithm</h3>
-
-<p>貌似使用了基本的mark-and-sweep来实现,但是没有compact,很经典的实现,早期的IBM JDK1.4就采用了该算法,提供compact和增量收集.貌似性能最佳实践中也提到了pre-thread allocation pool,降低了临时对象分配的开销,具体实现到底是在libc还是vm内部后续再看,传说是dlmalloc,doug lea大神再次出现了........<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">大神的作品</a>,有些过时,但在当时看来应该是篇神作.</p>
-
-<h3>Fragmentation</h3>
-
-<p>没有compact,通常情况下会面临fragmentation的问题,如果对于长时间运行的程序来说,该问题有可能存在,只能在使用内存上去避免,同时android所使用的dlmalloc也使用了chunk块来间接解决一些os级别的fragmentation问题,但是VM相关的memory management还没怎么研究,后续再研究吧,不过没有compact确实对某些特殊情况会比较蛋疼,只能绕过去.</p>
-
-<h3>coding</h3>
-
-<p>官方关于memory的最佳实践有多大的参考价值呢?只是强调不要创建无用的对象,而刚刚提到的fragmentation问题只字未提.</p>
-
-<pre><code>Avoid Creating Unnecessary Objects
-
-Object creation is never free.A generational GC with per-thread allocation pools for temporary objects can make allocation cheaper, but allocating memory is always more expensive than not allocating memory.
-
-If you allocate objects in a user interface loop, you will force a periodic garbage collection, creating little "hiccups" in the user experience. The concurrent collector introduced in Gingerbread helps, but unnecessary work should always be avoided.
-
-Thus, you should avoid creating object instances you don't need to. Some examples of things that can help:
-
-If you have a method returning a string, and you know that its result will always be appended to a StringBuffer anyway, change your signature and implementation so that the function does the append directly, instead of creating a short-lived temporary object.
-When extracting strings from a set of input data, try to return a substring of the original data, instead of creating a copy. You will create a new String object, but it will share the char[] with the data. (The trade-off being that if you're only using a small part of the original input, you'll be keeping it all around in memory anyway if you go this route.)
-
-A somewhat more radical idea is to slice up multidimensional arrays into parallel single one-dimension arrays:
-
-An array of ints is a much better than an array of Integers, but this also generalizes to the fact that two parallel arrays of ints are also a lot more efficient than an array of (int,int) objects. The same goes for any combination of primitive types.
-If you need to implement a container that stores tuples of (Foo,Bar) objects, try to remember that two parallel Foo[] and Bar[] arrays are generally much better than a single array of custom (Foo,Bar) objects. (The exception to this, of course, is when you're designing an API for other code to access; in those cases, it's usually better to trade good API design for a small hit in speed. But in your own internal code, you should try and be as efficient as possible.)
-
-Generally speaking, avoid creating short-term temporary objects if you can. Fewer objects created mean less-frequent garbage collection, which has a direct impact on user experience.
-</code></pre>
-
-<p>我没有感觉到有啥价值,看官方介绍不如把effective java多读几遍,对大对象分配和循环内部的对象创建小心一点,热点代码注意分析.特别是对于应用会申请大内存又会销毁,这种情况可以在应用层提供大对象复用的缓存机制,避免被销毁,而是一直使用,通过应用层代码来控制大对象空间的存取.否则,随意的大对象分配和销毁对于长时间运行的App来说就是个灾难.或者就只能往NDK上面想办法了,NDK我还不太了解,内存应该不计算在heap内的吧</p>
-
-<p>有缘再研究吧,怕是跟android没法继续缘分了,奶奶的,本来对android很有兴趣,现在全然没有了.</p>
 ]]></content>
   </entry>
   
