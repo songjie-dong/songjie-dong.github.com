@@ -4,7 +4,7 @@
   <title><![CDATA[Category: memory | All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/blog/categories/memory/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-09-24T01:37:21+08:00</updated>
+  <updated>2012-09-26T21:49:42+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -44,7 +44,7 @@ doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.h
 </ul>
 
 
-<h3>分配器总结</h3>
+<h2>分配器总结</h2>
 
 <p><strong>多核,多线程</strong>的分配优化,<strong>缓存作色</strong>,内存有效使用率(使用划分固定大小chunk的机制会提高分配的效率,降低分配高性能实现的复杂度,但不可避免的会有内存有效使用率的问题,需要一些启发式的优化策略,具体取舍看场景,内存很宝贵则可以在分配速度上让步,二者难以兼得,相关知识建议直接看深入理解计算机相关章节,想挖坑的可以看论文),这些问题都是现代分配器高性能的关键词.</p>
 

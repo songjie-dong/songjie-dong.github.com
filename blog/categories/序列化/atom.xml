@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: 序列化 | All Things Coding]]></title>
+  <link href="http://songjie-dong.github.com/blog/categories/序列化/atom.xml" rel="self"/>
+  <link href="http://songjie-dong.github.com/"/>
+  <updated>2012-09-26T21:49:42+08:00</updated>
+  <id>http://songjie-dong.github.com/</id>
+  <author>
+    <name><![CDATA[Songjie Dong]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[protocol buffer 设计分析]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/09/26/protocol-buffer-she-ji-fen-xi/"/>
+    <updated>2012-09-26T17:27:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/09/26/protocol-buffer-she-ji-fen-xi</id>
+    <content type="html"><![CDATA[<h2>诞生</h2>
+
+<p>传说google在索引系统的充斥着这样的代码</p>
+
+<pre><code>if (version == 3) {
+    ...
+} else if (version &gt; 4) {
+    if (version == 5) {
+        ...
+    }
+    ...
+}   
+</code></pre>
+
+<p>各种通讯协议的维护,版本兼容性,大型分布式系统升级维护成本,性能低下等等皆是让人头痛的问题,最终它们憋不住了,整了个protocol buffer(以下简称pb)出来,pb主要关注通讯协议本身的设计,充分考虑到了之前的各种问题,并将这些繁文缛节的东西考虑到了设计中.</p>
+
+<hr />
+
+<h2>分析</h2>
+
+<h3>Hello world</h3>
+
+<h3>设计关注点</h3>
+
+<h4>Serialization</h4>
+
+<h4>Encoding</h4>
+
+<h4>Extensible</h4>
+
+<h4>Multi-Platform</h4>
+
+<h4>Compatibility</h4>
+
+<h3>应用场景</h3>
+
+<h3>问题</h3>
+
+<hr />
+
+<h2>总结</h2>
+
+<h2>参考</h2>
+]]></content>
+  </entry>
+  
+</feed>
