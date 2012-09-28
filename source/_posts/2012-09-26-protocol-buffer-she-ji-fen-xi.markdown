@@ -81,4 +81,5 @@ message数据类型在encoding过程中考虑了一些兼容性的问题,在对m
 - [varint的一些编码说明](http://www.cppblog.com/true/archive/2009/09/11/95873.html )
 - [官方说明,注意关于负数的那段](https://developers.google.com/protocol-buffers/docs/encoding?hl=zh-CN )
 - [很全面的介绍](http://www.ibm.com/developerworks/cn/linux/l-cn-gpb/?ca=drs-tp4608 ) 
+- [完全做到动态message,当然有代价,是否合理不作讨论](http://www.searchtb.com/2012/09/protocol-buffers.html) 
 
