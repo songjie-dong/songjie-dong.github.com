@@ -111,11 +111,11 @@
 
 <h3>Algorithm</h3>
 
-<p>貌似使用了基本的mark-and-sweep来实现,但是没有compact,很经典的实现,早期的IBM JDK1.4就采用了该算法,提供compact和增量收集.貌似性能最佳实践中也提到了pre-thread allocation pool,降低了临时对象分配的开销,具体实现到底是在libc还是vm内部后续再看,传说是dlmalloc,doug lea大神再次出现了&#8230;&#8230;..<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">大神的作品</a>,有些过时,但在当时看来应该是篇神作.</p>
+<p>貌似使用了基本的mark-and-sweep来实现,但是没有compact,很经典的实现,早期的IBM JDK1.4就采用了该算法,提供compact和增量收集.貌似性能最佳实践中也提到了pre-thread allocation pool,降低了临时对象分配的开销,使用dlmalloc(bionic lib中的版本)来分配内存,doug lea大神再次出现了&#8230;&#8230;..<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">大神的作品</a>,有些过时,但在当时看来应该是篇神作.</p>
 
 <h3>Fragmentation</h3>
 
-<p>没有compact,通常情况下会面临fragmentation的问题,如果对于长时间运行的程序来说,该问题有可能存在,只能在使用内存上去避免,同时android所使用的dlmalloc也使用了chunk块来间接解决一些os级别的fragmentation问题,但是VM相关的memory management还没怎么研究,后续再研究吧,不过没有compact确实对某些特殊情况会比较蛋疼,只能绕过去.</p>
+<p>没有compact,可能会面临fragmentation的问题,对于长时间运行的程序来说,该问题有可能存在,dlmalloc使用了chunk块来尽量避免外部fragmentation问题,出现问题只能在应用层考虑如何避免,没有查到关于后续实现generation based的信息,对于管理几十兆内存来说,mark-and-sweep应该是合理的,足以应付大多数的情况.</p>
 
 <h3>coding</h3>
 
@@ -140,9 +140,7 @@ If you need to implement a container that stores tuples of (Foo,Bar) objects, tr
 Generally speaking, avoid creating short-term temporary objects if you can. Fewer objects created mean less-frequent garbage collection, which has a direct impact on user experience.
 </code></pre>
 
-<p>我没有感觉到有啥价值,看官方介绍不如把effective java多读几遍,对大对象分配和循环内部的对象创建小心一点,热点代码注意分析.特别是对于应用会申请大内存又会销毁,这种情况可以在应用层提供大对象复用的缓存机制,避免被销毁,而是一直使用,通过应用层代码来控制大对象空间的存取.否则,随意的大对象分配和销毁对于长时间运行的App来说就是个灾难.或者就只能往NDK上面想办法了,NDK我还不太了解,内存应该不计算在heap内的吧</p>
-
-<p>有缘再研究吧,怕是跟android没法继续缘分了,奶奶的,本来对android很有兴趣,现在全然没有了.</p>
+<p>我没有感觉到有啥价值,看官方介绍不如把effective java多读几遍,对大对象分配和循环内部的对象创建小心一点,热点代码注意分析.特别是对于应用会申请大内存又会销毁,这种情况可以在应用层提供大对象复用的缓存机制,避免被销毁,而是一直使用,通过应用层代码来控制大对象空间的存取.否则,随意的大对象分配和销毁对于长时间运行的App来说就是个灾难.或者就只能往NDK上面想办法了,NDK还不太了解,内存应该不计算在heap内的吧</p>
 </div>
 
 

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: c | All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/blog/categories/c/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-09-29T10:06:15+08:00</updated>
+  <updated>2012-10-09T10:54:45+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -48,11 +48,9 @@ doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.h
 
 <p><strong>多核,多线程</strong>的分配优化,<strong>缓存作色</strong>,内存有效使用率(使用划分固定大小chunk的机制会提高分配的效率,降低分配高性能实现的复杂度,但不可避免的会有内存有效使用率的问题,需要一些启发式的优化策略,具体取舍看场景,内存很宝贵则可以在分配速度上让步,二者难以兼得,相关知识建议直接看深入理解计算机相关章节,想挖坑的可以看论文),这些问题都是现代分配器高性能的关键词.</p>
 
-<h2>没有结论</h2>
+<h2>题外话</h2>
 
-<p>stackoverflow上传言android用的新版dlmalloc,为啥不用自家的tcmalloc,我没细分析,既然开头说了android内部避免了外部碎片化的问题,故dalvik的gc未提供compact,那明显是直接使用tcmalloc更合适,而且现在手机动不动就4核,这个问题如果有机会看代码再求证.</p>
-
-<p>回过头来看jvm,为啥老有碎片呢...难道是为了顾及一次书写,到处执行.问题很多,可时间不多~,碎叫~</p>
+<p>回过头来看jvm,为啥老有碎片呢...难道是为了顾及一次书写,到处执行，so内部实现的内存管理实现的通用内存分配来跨平台?问题很多哇,可时间不多~,后续研究，碎叫~</p>
 ]]></content>
   </entry>
   
