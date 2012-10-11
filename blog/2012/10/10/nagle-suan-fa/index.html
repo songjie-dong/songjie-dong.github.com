@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>nagle 算法 - All Things Coding</title>
+  <meta name="author" content="Songjie Dong">
+
+  
+  <meta name="description" content="在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪? &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="All Things Coding" type="application/atom+xml">
+  <link href='http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <div id="logo">
+  	<div id="logoLeft">{</div>
+  	<div id="logoText">dsj</div>
+  	<div id="logoRight">}</div>
+  	<div class="clear"></div>
+  </div>
+  <h1><a href="/">All Things Coding</a></h1>
+  
+    <h2>Coding Thinking Dreaming</h2>
+  
+  <div class="clear"></div>
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:songjie-dong.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about/about.html">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      
+        <h1 class="entry-title">Nagle 算法</h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-10T16:55:00+08:00" pubdate data-updated="true">Oct 10<span>th</span>, 2012</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪?</p>
+
+<h2>介绍</h2>
+
+<p>nagle算法以其发明者john nagle命名,该算法通过减少在网络上传输的包来改进网络上传输的效率.</p>
+
+<p>nagle在文档:Congestion Control in IP/TCP Internetworks中描述了所谓的&#8221;small packet problem&#8221;, 即当一个应用重复发送小块数据,通常大小只有1个byte.TCP的包体中有40byte的header(20byte的TCP信息,20byte的ipv4信息),而这会导致41个byte的包只有一个byte的有用信息,这是一个巨大的开销.这种情况常常出现在使用telnet会话时大部分键盘输入会生成一个byte有效数据并被立即传输时,更坏的是在慢速网络环境下,大量这样的包会在同一时间传输,会潜在的导致拥塞崩溃.</p>
+
+<h2>pseudocode</h2>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="k">new</span> <span class="n">data</span> <span class="n">to</span> <span class="n">send</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">the</span> <span class="n">window</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="n">MSS</span> <span class="n">and</span> <span class="n">available</span> <span class="n">data</span> <span class="n">is</span> <span class="o">&gt;=</span> <span class="n">MSS</span>
+</span><span class='line'>      <span class="n">send</span> <span class="n">complete</span> <span class="n">MSS</span> <span class="n">segment</span> <span class="n">now</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="n">unconfirmed</span> <span class="n">data</span> <span class="n">still</span> <span class="n">in</span> <span class="n">the</span> <span class="n">pipe</span>
+</span><span class='line'>        <span class="n">enqueue</span> <span class="n">data</span> <span class="n">in</span> <span class="n">the</span> <span class="n">buffer</span> <span class="n">until</span> <span class="n">an</span> <span class="n">acknowledge</span> <span class="n">is</span> <span class="n">received</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">send</span> <span class="n">data</span> <span class="n">immediately</span>
+</span><span class='line'>      <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'>    <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'>  <span class="n">end</span> <span class="k">if</span>    
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>问题</h2>
+
+<p>80年代初,有个组织提交了名为TCP Delayed Acknowledgment的算法,该算法会合并多个ack包以达到提升效率的作用,最大的ack延迟为500ms.当两个算法同时启用时,出现write-write-read的顺序时则由于第二个写可能的延迟导致read时间过长.由于这个原因,TCP实现提供了一些应用接口来关闭nagle算法,通常这个可选项名为TCP_NODELAY.(关于write-write-read带来的问题还有些不是很清晰)</p>
+
+<p>nagle算法适用于任何大小的数据,如果一次写请求需要发送的包跨度为 2n packets,则最后的数据包会被buffer,直到收到前一个包的ack消息,延迟会增加上百ms,而且是由于这个算法导致了额外的开销.如果数据大于一个packet时,requester或responser最好都关闭该算法.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Songjie Dong</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-10T16:55:00+08:00" pubdate data-updated="true">Oct 10<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/tcp/'>TCP</a>, <a class='category' href='/blog/categories/algorithm/'>algorithm</a>, <a class='category' href='/blog/categories/network/'>network</a>, <a class='category' href='/blog/categories/performance/'>performance</a>, <a class='category' href='/blog/categories/翻译/'>翻译</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/" data-via="" data-counturl="http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left articlenav" href="/blog/2012/10/10/ltracexue-xi/" title="Previous Post: ltrace学习">&laquo; ltrace学习</a>
+      
+      
+        <a class="basic-alignment right articlenav" href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/" title="Next Post: 渐渐离去的战友们">渐渐离去的战友们 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+<section class="odd">
+  <div class="hero-unit">
+	<h1>Profile</h1>
+	<p>
+      <a class="btn btn-primary btn-large">java,emacs,lisp,db,performance,jvm,python,c,linux,shell,distributed略懂,基础较差,没赢在起点,但兴趣驱动学习,努力做个geek,技术改变生活.现在徘徊在互联网和移动互联网之间. 
+
+"I am not an academic. I have never even taken a computer science course." --Leslie Lamport "Teaching Concurrency" 
+      </a>
+	</p>
+  </div>
+</section>
+
+
+<section class="odd">
+  <h1>Contact</h1>
+  <p>
+	<iframe width="100%" 
+			height="100" 
+			class="share_self"  
+			frameborder="0" 
+			scrolling="no" 
+			src="http://widget.weibo.com/weiboshow/index.php?language=&width=100%&height=400&fansRow=2&ptype=0&speed=0&skin=2&isTitle=0&noborder=1&isWeibo=0&isFans=0&uid=1885742623&verifier=296b9670&dpc=1">
+	</iframe> 
+	<img src="/images/email_address.png" alt="powered by imagemagick:" class="img-rounded" />
+  </p>
+</section>
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/">weak reference 原理分析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/bdbxue-xi-bi-ji/">BDB学习笔记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/">渐渐离去的战友们</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/10/nagle-suan-fa/">nagle 算法</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2012 - Songjie Dong -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> Theme by <a href="http://melandri.net">@alemelandri</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'dongsongjie';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/';
+        var disqus_url = 'http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

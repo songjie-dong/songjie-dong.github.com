@@ -4,7 +4,7 @@
   <title><![CDATA[Category: performance | All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/blog/categories/performance/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-10-09T10:54:45+08:00</updated>
+  <updated>2012-10-11T14:42:01+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -12,6 +12,130 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[BDB学习笔记]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/"/>
+    <updated>2012-10-11T11:37:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji</id>
+    <content type="html"><![CDATA[<h2>介绍</h2>
+
+<p>Berkeley DB (DB)是一个高性能的，嵌入数据库，和C语言，C++，Java，Perl，Python，PHP，Tcl以及其他很多语言都有绑定。Berkeley DB可以保存任意类型的键/值对，而且可以为一个键保存多个数据。Berkeley DB可以支持数千的并发线程同时操作数据库，支持最大256TB的数据，广泛用于各种操作系统包括大多数Unix类操作系统和Windows操作系统以及实时操作系统。</p>
+
+<p>在工作中使用的是java版本的bdb( Berkeley DB 以下简称为bdb)，主要用来存储计算结果提供给业务系统访问，比如数据挖掘的结果，这类数据定期会刷新，访问形式单一，存在数据库有点大材小用，另外就是存储大量的计算中间结果。总体来说bdb的性能非常不错，但在使用时还是遇到了一些问题，总结一些经验教训</p>
+
+<h3>问题1：定期build大量计算结果</h3>
+
+<p>实际使用时，写入千万数据后，写入性能急剧下降，但硬盘还在飞转，调节了很多的系统参数，关闭了事务，调大了btree索引缓存(根据bdb内部的DbCacheSize工具调节)，jvm启动参数等等(怀疑是fgc的问题)，都没有解决问题，最后调节了写入数据的顺序才解决了问题，一开始我们没有对写入数据的key排序，而随机写入大量数据导致了btree索引性能的下降，改为顺序写入后，问题解决。那如何解释硬盘飞转呢，其实是由于写操作频繁触发btree结构调整导致。</p>
+
+<h3>问题2：性能测试出现少量lock timeout，软硬件环境不同出现的次数也不同</h3>
+
+<p>默认的locktimeout是500ms，而我们在并发读写的性能测试时出现了少量的timeout情况，32位环境（jdk1.5）下较少，64位环境(jdk1.6)下较多，500ms的timeout，在非高性能要求的环境下，貌似还是短了点。问题是为什么对于不同的环境，出现timeout的次数差距较明显，多次测试发现32位环境出现的较少，64位环境出现的较多，com.sleepycat.je.util.DbCacheSize这个工具让我发现了一些线索，原来我一直以为这个工具就是粗略根据分支节点大概的大小，总数据量，key大小就可以帮助我们计算出大致的索引cache size，比如1000万数据，key长20byte的cache size：</p>
+
+<pre><code>Inputs: records=10000000 keySize=20 dataSize=8092 nodeMax=128 density=80% overhead=10%
+Cache Size      Btree Size  Description
+871,284,622     784,156,160  Minimum, internal nodes only  
+1,180,450,133   1,062,405,120  Maximum, internal nodes only  
+91,537,951,288  82,384,156,160  Minimum, internal nodes and leaf nodes  
+91,847,116,800  82,662,405,120  Maximum, internal nodes and leaf nodes  
+Btree levels: 4 
+</code></pre>
+
+<p>这个是在mac下的测试结果，而在32位的ubuntu下测试minimum internal nodes需要501M，主要的原因是由于在不同的环境对应的java对象占用内存大小不一致，而java本身没有提供动态检测对象占用内存大小的方法，在bdb中MemoryBudget类里面定义了不同环境下对应的常用对象的大小，所以，如果用同样的cachesize配置，在不同的环境下会表现出不同的性能，因为如果设置小了会导致部分索引的操作无法命中缓存，性能会有所下降，所以我推测timeout的频率不同的原因是由于固定的cachesize在不同的环境性能也会不同而导致。</p>
+
+<h3>问题3：数据build需要注意的</h3>
+
+<p>对于大数据量写入bdb，同时需要把数据文件跨地区传输时，有一个小的tips，就是在你build完数据以后，close environment后，重新开启一个只读的environment，设置启动参数：
+<div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span>
+</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">env</span><span class="o">.</span><span class="na">runCleaner</span> <span class="err">＝</span> <span class="kc">false</span>
+</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">cleaner</span><span class="o">.</span><span class="na">minUtilization</span> <span class="err">＝</span> <span class="mi">90</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">while</span> <span class="o">(</span><span class="n">environment</span><span class="o">.</span><span class="na">cleanLog</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;clean log &quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span><span class='line'><span class="n">CheckpointConfig</span> <span class="n">cleanCheckpointConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CheckpointConfig</span><span class="o">()</span>
+</span><span class='line'><span class="n">cleanCheckpointConfig</span><span class="o">.</span><span class="na">setForce</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">checkpoint</span><span class="o">(</span><span class="n">cleanCheckpointConfig</span><span class="o">);</span>
+</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>加上如上代码，这样就可以清除掉大部分废弃的log信息，把文件缩小，这样传输时间会省不少，特别在带宽受限的情况下。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[nagle 算法]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/"/>
+    <updated>2012-10-10T16:55:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa</id>
+    <content type="html"><![CDATA[<p>在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪?</p>
+
+<h2>介绍</h2>
+
+<p>nagle算法以其发明者john nagle命名,该算法通过减少在网络上传输的包来改进网络上传输的效率.</p>
+
+<p>nagle在文档:Congestion Control in IP/TCP Internetworks中描述了所谓的"small packet problem", 即当一个应用重复发送小块数据,通常大小只有1个byte.TCP的包体中有40byte的header(20byte的TCP信息,20byte的ipv4信息),而这会导致41个byte的包只有一个byte的有用信息,这是一个巨大的开销.这种情况常常出现在使用telnet会话时大部分键盘输入会生成一个byte有效数据并被立即传输时,更坏的是在慢速网络环境下,大量这样的包会在同一时间传输,会潜在的导致拥塞崩溃.</p>
+
+<h2>pseudocode</h2>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="k">new</span> <span class="n">data</span> <span class="n">to</span> <span class="n">send</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">the</span> <span class="n">window</span> <span class="n">size</span> <span class="o">&amp;</span><span class="n">gt</span><span class="o">;=</span> <span class="n">MSS</span> <span class="n">and</span> <span class="n">available</span> <span class="n">data</span> <span class="n">is</span> <span class="o">&amp;</span><span class="n">gt</span><span class="o">;=</span> <span class="n">MSS</span>
+</span><span class='line'>    <span class="n">send</span> <span class="n">complete</span> <span class="n">MSS</span> <span class="n">segment</span> <span class="n">now</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="n">unconfirmed</span> <span class="n">data</span> <span class="n">still</span> <span class="n">in</span> <span class="n">the</span> <span class="n">pipe</span>
+</span><span class='line'>      <span class="n">enqueue</span> <span class="n">data</span> <span class="n">in</span> <span class="n">the</span> <span class="n">buffer</span> <span class="n">until</span> <span class="n">an</span> <span class="n">acknowledge</span> <span class="n">is</span> <span class="n">received</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="n">send</span> <span class="n">data</span> <span class="n">immediately</span>
+</span><span class='line'>    <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'>  <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'><span class="n">end</span> <span class="k">if</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<h2>问题</h2>
+
+<p>80年代初,有个组织提交了名为TCP Delayed Acknowledgment的算法,该算法会合并多个ack包以达到提升效率的作用,最大的ack延迟为500ms.当两个算法同时启用时,出现write-write-read的顺序时则由于第二个写可能的延迟导致read时间过长.由于这个原因,TCP实现提供了一些应用接口来关闭nagle算法,通常这个可选项名为TCP_NODELAY.(关于write-write-read带来的问题还有些不是很清晰)</p>
+
+<p>nagle算法适用于任何大小的数据,如果一次写请求需要发送的包跨度为 2n packets,则最后的数据包会被buffer,直到收到前一个包的ack消息,延迟会增加上百ms,而且是由于这个算法导致了额外的开销.如果数据大于一个packet时,requester或responser最好都关闭该算法.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[android菜鸟的吐槽1]]></title>

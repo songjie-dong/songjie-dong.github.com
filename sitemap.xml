@@ -30,11 +30,37 @@
         <loc>
             http://songjie-dong.github.com/blog/2012/09/23/shen-ru-li-jie-ji-suan-ji-malloc/
         </loc>
-        <lastmod>2012-10-09T10:51:13+08:00</lastmod>
+        <lastmod>2012-10-11T14:41:29+08:00</lastmod>
     </url>
     <url>
         <loc>http://songjie-dong.github.com/blog/2012/09/26/protocol-buffer-she-ji-fen-xi/</loc>
         <lastmod>2012-09-28T19:00:28+08:00</lastmod>
+    </url>
+    <url>
+        <loc>http://songjie-dong.github.com/blog/2012/10/10/ltracexue-xi/</loc>
+        <lastmod>2012-10-10T16:30:59+08:00</lastmod>
+    </url>
+    <url>
+        <loc>http://songjie-dong.github.com/blog/2012/10/10/nagle-suan-fa/</loc>
+        <lastmod>2012-10-11T14:17:05+08:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://songjie-dong.github.com/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/
+        </loc>
+        <lastmod>2012-10-11T11:27:35+08:00</lastmod>
+    </url>
+    <url>
+        <loc>http://songjie-dong.github.com/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/</loc>
+        <lastmod>2012-10-11T11:32:46+08:00</lastmod>
+    </url>
+    <url>
+        <loc>http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/</loc>
+        <lastmod>2012-10-11T12:51:38+08:00</lastmod>
+    </url>
+    <url>
+        <loc>http://songjie-dong.github.com/blog/2012/10/11/weak-reference-yuan-li-fen-xi/</loc>
+        <lastmod>2012-10-11T12:55:52+08:00</lastmod>
     </url>
     <url>
         <loc>http://songjie-dong.github.com/about/about.html</loc>
@@ -46,10 +72,10 @@
     </url>
     <url>
         <loc>http://songjie-dong.github.com/blog/archives/</loc>
-        <lastmod>2012-10-09T10:51:13+08:00</lastmod>
+        <lastmod>2012-10-11T14:41:29+08:00</lastmod>
     </url>
     <url>
         <loc>http://songjie-dong.github.com/</loc>
-        <lastmod>2012-10-09T10:51:13+08:00</lastmod>
+        <lastmod>2012-10-11T14:41:29+08:00</lastmod>
     </url>
 </urlset>

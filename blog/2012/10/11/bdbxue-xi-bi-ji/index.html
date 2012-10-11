@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>BDB学习笔记 - All Things Coding</title>
+  <meta name="author" content="Songjie Dong">
+
+  
+  <meta name="description" content="介绍 Berkeley DB (DB)是一个高性能的，嵌入数据库，和C语言，C++，Java，Perl，Python，PHP，Tcl以及其他很多语言都有绑定。Berkeley DB可以保存任意类型的键/值对，而且可以为一个键保存多个数据。Berkeley DB可以支持数千的并发线程同时操作数据库， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="All Things Coding" type="application/atom+xml">
+  <link href='http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <div id="logo">
+  	<div id="logoLeft">{</div>
+  	<div id="logoText">dsj</div>
+  	<div id="logoRight">}</div>
+  	<div class="clear"></div>
+  </div>
+  <h1><a href="/">All Things Coding</a></h1>
+  
+    <h2>Coding Thinking Dreaming</h2>
+  
+  <div class="clear"></div>
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:songjie-dong.github.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about/about.html">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      
+        <h1 class="entry-title">BDB学习笔记</h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-11T11:37:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>介绍</h2>
+
+<p>Berkeley DB (DB)是一个高性能的，嵌入数据库，和C语言，C++，Java，Perl，Python，PHP，Tcl以及其他很多语言都有绑定。Berkeley DB可以保存任意类型的键/值对，而且可以为一个键保存多个数据。Berkeley DB可以支持数千的并发线程同时操作数据库，支持最大256TB的数据，广泛用于各种操作系统包括大多数Unix类操作系统和Windows操作系统以及实时操作系统。</p>
+
+<p>在工作中使用的是java版本的bdb( Berkeley DB 以下简称为bdb)，主要用来存储计算结果提供给业务系统访问，比如数据挖掘的结果，这类数据定期会刷新，访问形式单一，存在数据库有点大材小用，另外就是存储大量的计算中间结果。总体来说bdb的性能非常不错，但在使用时还是遇到了一些问题，总结一些经验教训</p>
+
+<h3>问题1：定期build大量计算结果</h3>
+
+<p>实际使用时，写入千万数据后，写入性能急剧下降，但硬盘还在飞转，调节了很多的系统参数，关闭了事务，调大了btree索引缓存(根据bdb内部的DbCacheSize工具调节)，jvm启动参数等等(怀疑是fgc的问题)，都没有解决问题，最后调节了写入数据的顺序才解决了问题，一开始我们没有对写入数据的key排序，而随机写入大量数据导致了btree索引性能的下降，改为顺序写入后，问题解决。那如何解释硬盘飞转呢，其实是由于写操作频繁触发btree结构调整导致。</p>
+
+<h3>问题2：性能测试出现少量lock timeout，软硬件环境不同出现的次数也不同</h3>
+
+<p>默认的locktimeout是500ms，而我们在并发读写的性能测试时出现了少量的timeout情况，32位环境（jdk1.5）下较少，64位环境(jdk1.6)下较多，500ms的timeout，在非高性能要求的环境下，貌似还是短了点。问题是为什么对于不同的环境，出现timeout的次数差距较明显，多次测试发现32位环境出现的较少，64位环境出现的较多，com.sleepycat.je.util.DbCacheSize这个工具让我发现了一些线索，原来我一直以为这个工具就是粗略根据分支节点大概的大小，总数据量，key大小就可以帮助我们计算出大致的索引cache size，比如1000万数据，key长20byte的cache size：</p>
+
+<pre><code>Inputs: records=10000000 keySize=20 dataSize=8092 nodeMax=128 density=80% overhead=10%
+Cache Size      Btree Size  Description
+871,284,622     784,156,160  Minimum, internal nodes only  
+1,180,450,133   1,062,405,120  Maximum, internal nodes only  
+91,537,951,288  82,384,156,160  Minimum, internal nodes and leaf nodes  
+91,847,116,800  82,662,405,120  Maximum, internal nodes and leaf nodes  
+Btree levels: 4 
+</code></pre>
+
+<p>这个是在mac下的测试结果，而在32位的ubuntu下测试minimum internal nodes需要501M，主要的原因是由于在不同的环境对应的java对象占用内存大小不一致，而java本身没有提供动态检测对象占用内存大小的方法，在bdb中MemoryBudget类里面定义了不同环境下对应的常用对象的大小，所以，如果用同样的cachesize配置，在不同的环境下会表现出不同的性能，因为如果设置小了会导致部分索引的操作无法命中缓存，性能会有所下降，所以我推测timeout的频率不同的原因是由于固定的cachesize在不同的环境性能也会不同而导致。</p>
+
+<h3>问题3：数据build需要注意的</h3>
+
+<p>对于大数据量写入bdb，同时需要把数据文件跨地区传输时，有一个小的tips，就是在你build完数据以后，close environment后，重新开启一个只读的environment，设置启动参数：</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>
+</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">env</span><span class="o">.</span><span class="na">runCleaner</span> <span class="err">＝</span> <span class="kc">false</span>
+</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">cleaner</span><span class="o">.</span><span class="na">minUtilization</span> <span class="err">＝</span> <span class="mi">90</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="o">(</span><span class="n">environment</span><span class="o">.</span><span class="na">cleanLog</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;clean log &quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="n">CheckpointConfig</span> <span class="n">cleanCheckpointConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CheckpointConfig</span><span class="o">()</span>
+</span><span class='line'><span class="n">cleanCheckpointConfig</span><span class="o">.</span><span class="na">setForce</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">checkpoint</span><span class="o">(</span><span class="n">cleanCheckpointConfig</span><span class="o">);</span>
+</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>加上如上代码，这样就可以清除掉大部分废弃的log信息，把文件缩小，这样传输时间会省不少，特别在带宽受限的情况下。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Songjie Dong</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-11T11:37:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/berkeley-db/'>Berkeley DB</a>, <a class='category' href='/blog/categories/performance/'>performance</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/" data-via="" data-counturl="http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left articlenav" href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/" title="Previous Post: 阿里入职培训的感受">&laquo; 阿里入职培训的感受</a>
+      
+      
+        <a class="basic-alignment right articlenav" href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/" title="Next Post: weak reference 原理分析">weak reference 原理分析 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+<section class="odd">
+  <div class="hero-unit">
+	<h1>Profile</h1>
+	<p>
+      <a class="btn btn-primary btn-large">java,emacs,lisp,db,performance,jvm,python,c,linux,shell,distributed略懂,基础较差,没赢在起点,但兴趣驱动学习,努力做个geek,技术改变生活.现在徘徊在互联网和移动互联网之间. 
+
+"I am not an academic. I have never even taken a computer science course." --Leslie Lamport "Teaching Concurrency" 
+      </a>
+	</p>
+  </div>
+</section>
+
+
+<section class="odd">
+  <h1>Contact</h1>
+  <p>
+	<iframe width="100%" 
+			height="100" 
+			class="share_self"  
+			frameborder="0" 
+			scrolling="no" 
+			src="http://widget.weibo.com/weiboshow/index.php?language=&width=100%&height=400&fansRow=2&ptype=0&speed=0&skin=2&isTitle=0&noborder=1&isWeibo=0&isFans=0&uid=1885742623&verifier=296b9670&dpc=1">
+	</iframe> 
+	<img src="/images/email_address.png" alt="powered by imagemagick:" class="img-rounded" />
+  </p>
+</section>
+
+<section>
+  <h1>Categories</h1>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/">weak reference 原理分析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/bdbxue-xi-bi-ji/">BDB学习笔记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/">渐渐离去的战友们</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/10/nagle-suan-fa/">nagle 算法</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2012 - Songjie Dong -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> Theme by <a href="http://melandri.net">@alemelandri</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'dongsongjie';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/';
+        var disqus_url = 'http://songjie-dong.github.com/blog/2012/10/11/bdbxue-xi-bi-ji/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
