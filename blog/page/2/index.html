@@ -9,8 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="
-">
+  <meta name="description" content="在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪? &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -74,6 +73,85 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/10/10/nagle-suan-fa/">Nagle 算法</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-10T16:55:00+08:00" pubdate data-updated="true">Oct 10<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/10/10/nagle-suan-fa/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪?</p>
+
+<h2>介绍</h2>
+
+<p>nagle算法以其发明者john nagle命名,该算法通过减少在网络上传输的包来改进网络上传输的效率.</p>
+
+<p>nagle在文档:Congestion Control in IP/TCP Internetworks中描述了所谓的&#8221;small packet problem&#8221;, 即当一个应用重复发送小块数据,通常大小只有1个byte.TCP的包体中有40byte的header(20byte的TCP信息,20byte的ipv4信息),而这会导致41个byte的包只有一个byte的有用信息,这是一个巨大的开销.这种情况常常出现在使用telnet会话时大部分键盘输入会生成一个byte有效数据并被立即传输时,更坏的是在慢速网络环境下,大量这样的包会在同一时间传输,会潜在的导致拥塞崩溃.</p>
+
+<h2>pseudocode</h2>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="k">new</span> <span class="n">data</span> <span class="n">to</span> <span class="n">send</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">the</span> <span class="n">window</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="n">MSS</span> <span class="n">and</span> <span class="n">available</span> <span class="n">data</span> <span class="n">is</span> <span class="o">&gt;=</span> <span class="n">MSS</span>
+</span><span class='line'>      <span class="n">send</span> <span class="n">complete</span> <span class="n">MSS</span> <span class="n">segment</span> <span class="n">now</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="n">unconfirmed</span> <span class="n">data</span> <span class="n">still</span> <span class="n">in</span> <span class="n">the</span> <span class="n">pipe</span>
+</span><span class='line'>        <span class="n">enqueue</span> <span class="n">data</span> <span class="n">in</span> <span class="n">the</span> <span class="n">buffer</span> <span class="n">until</span> <span class="n">an</span> <span class="n">acknowledge</span> <span class="n">is</span> <span class="n">received</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">send</span> <span class="n">data</span> <span class="n">immediately</span>
+</span><span class='line'>      <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'>    <span class="n">end</span> <span class="k">if</span>
+</span><span class='line'>  <span class="n">end</span> <span class="k">if</span>    
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>问题</h2>
+
+<p>80年代初,有个组织提交了名为TCP Delayed Acknowledgment的算法,该算法会合并多个ack包以达到提升效率的作用,最大的ack延迟为500ms.当两个算法同时启用时,出现write-write-read的顺序时则由于第二个写可能的延迟导致read时间过长.由于这个原因,TCP实现提供了一些应用接口来关闭nagle算法,通常这个可选项名为TCP_NODELAY.(关于write-write-read带来的问题还有些不是很清晰)</p>
+
+<p>nagle算法适用于任何大小的数据,如果一次写请求需要发送的包跨度为 2n packets,则最后的数据包会被buffer,直到收到前一个包的ack消息,延迟会增加上百ms,而且是由于这个算法导致了额外的开销.如果数据大于一个packet时,requester或responser最好都关闭该算法.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -429,82 +507,6 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/09/09/android-gao-xiao-he-oozhi-jian-de-xuan-ze/">Android菜鸟的吐槽1</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-09T22:33:00+08:00" pubdate data-updated="true">Sep 9<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/09/09/android-gao-xiao-he-oozhi-jian-de-xuan-ze/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>近期一直忙于写android应用的代码,其实我没有看完过任何一本android的著作,虽然说书籍收集了也
-不少了,但很少完整的去看,有时候发现最靠谱的还是官方文档和一些实践性的书籍或者blog,通常工作
-中是遇到问题,查资料,然后解决问题,在这个过程中慢慢发现其实写android的代码很有挑战性,要关注
-的东西很多,比如:</p>
-
-<ol>
-<li><p>程序本身的高效,高效意味着更短的延迟,用户更好的体验.</p></li>
-<li><p>网络的开销,比如官方<a href="http://developer.android.com/training/efficient-downloads/efficient-network-access.html#RadioStateMachine">这篇</a>关于网络对于电量的影响</p></li>
-<li><p>异步处理,费时操作都得异步,否则UI就block了,再过几秒系统就提示无反应了,最坏的结果就是被直接拖到垃圾桶.</p></li>
-</ol>
-
-
-<p>在这里我就不说后两点的,主讲第一点,也就是程序效率的本身,高效和OO之间似乎有些矛盾,当然这种问题
-在java领域已经越来越不明显,因为java server级的JIT(Just In Time Compiler)已经为我们做了
-足够多的工作,而我们都是坐享其成,如果没有inline优化,你们敢想一个方法不超过5行吗?for循环我们
-很少去手动提取不变量了,因为JIT总是能帮我们找到hot的loop并优化掉,而一些非热点且低效代码,则被
-超强的机器性能所掩盖.而对于dalvik,情况发生了变化,一切似乎回到那个资源无比紧缺的时代,系统的设
-计需要考虑移动设备的特点和dalvik本身.</p>
-
-<p>在这个<strong>时代</strong>写代码除了算法加数据结构,我们还有很多问题要关注,因为这个时代的主流不再是孤胆英雄式的
-程序员,更多的需要依赖团队开发,对于公司来说,代码的可维护性并不比高效的分量轻多少,而在android上
-很多优化都是具有版本和硬件的亲和性,不同的版本,不同的硬件也许有完全不一样的结果,所以一个优化值不
-值得做是个需要好好思考的问题,而我个人对于这个问题的建议是:</p>
-
-<ol>
-<li><p>优化方案本身的生命力
-比如getter,setter的性能问题,早期dalvik的getter,setter确实比直接读写成员性能要差很多
-但这个优化有些逆天了,而且长远来看这种问题被内置优化的可能性较大,故在可忍受的范围内可以优化
-但不能作为普遍使用的技巧,否则就颠覆了OO的封装,随意修改私有对象状态倒是无所谓,如果是共享的
-那就&#8230;.</p></li>
-<li><p>优化是否有必要
-很多时候我们未必需要按官方的建议优化,比如绝大多数的app都不会占据太多的CPU,当然如果是一些
-游戏的话&#8230;所以我们大可不必过于的关心一些优化代码的技巧,let it go~,写出你认为更美观的代
-码才是绝大多数情况下我们要考虑的问题.</p></li>
-<li><p>如果必须要优化,泡好一杯茶,打起精神,尽量将优化对于系统整体的影响降到最低程度.</p></li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -547,11 +549,15 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/">再看面向对象</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/">weak reference 原理分析</a>
@@ -567,10 +573,6 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
     
       <li class="post">
         <a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/">渐渐离去的战友们</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/10/nagle-suan-fa/">nagle 算法</a>
       </li>
     
   </ul>

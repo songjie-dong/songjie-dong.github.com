@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>android菜鸟的吐槽3 - All Things Coding</title>
+  <title>再看面向对象 - All Things Coding</title>
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="android关于dalvik的资料显得不是很全,像我这种写服务端代码写惯了的,突然换到android下面写java代码,基本也算是两眼一抹黑. 2010 google I/O关于加入JIT的介绍,而后则很少有介绍后续的发展,搞的我很难写代码,以前的知识都成了写代码的习惯思考, &hellip;">
+  <meta name="description" content="初次见面 初学OO是在学习Java时,当时感觉OO像是巴别塔,迷恋的人觉得无比的向往,于是猛啃侯捷版的Thinking in java中那几章继承多态啥的,不知道看过多少遍,而后看设计模式(不夸张,期间还有coding例子加冥想体会),当时自我感觉略懂,能用,但写起代码还是有些手足无措. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/">
+  <link rel="canonical" href="http://songjie-dong.github.com/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -77,7 +77,7 @@
   <header>
     
       
-        <h1 class="entry-title">Android菜鸟的吐槽3</h1>
+        <h1 class="entry-title">再看面向对象</h1>
       
     
     
@@ -94,7 +94,7 @@
   
 
 
-<time datetime="2012-09-14T15:08:00+08:00" pubdate data-updated="true">Sep 14<span>th</span>, 2012</time>
+<time datetime="2012-10-16T15:52:00+08:00" pubdate data-updated="true">Oct 16<span>th</span>, 2012</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -103,44 +103,47 @@
   </header>
 
 
-<div class="entry-content"><p>android关于dalvik的资料显得不是很全,像我这种写服务端代码写惯了的,突然换到android下面写java代码,基本也算是两眼一抹黑.</p>
+<div class="entry-content"><h2>初次见面</h2>
 
-<p>2010 google I/O关于加入JIT的介绍,而后则很少有介绍后续的发展,搞的我很难写代码,以前的知识都成了写代码的习惯思考,而且JVM关于JIT的优化相对成熟,处于发展而不是变化的阶段,但是android的性能最佳实践中提到的东西,貌似随着版本的发布有不少的变化,所以很难作为代码优化的参考.关于gc方面的资料就更加的少,特别是涉及到细节,只能看代码和借助内部的一些debug工具,感觉上dalvik未来还会有很多的发展和改进空间..</p>
+<p>初学OO是在学习Java时,当时感觉OO像是巴别塔,迷恋的人觉得无比的向往,于是猛啃侯捷版的Thinking in java中那几章继承多态啥的,不知道看过多少遍,而后看设计模式(不夸张,期间还有coding例子加冥想体会),当时自我感觉略懂,能用,但写起代码还是有些手足无措.后续又有了很多这方面的书籍,例如:重构-改善既有代码的设计,类似这样的书翻了不少,感觉找到了救世主,最后发现自己严重的教条化,xx代码太长不爽,if太多不爽,没用到模式也不爽,甚至听到每个方法不超过5行这种YY都心潮澎湃.</p>
 
-<p>这几天查阅了一些关于dalvik的资料,blog,还没深入看代码,先提供一些所谓的直观感觉,后续有空在dalvik的gc部分代码基础上再记录一些细节吧.(开篇也许就是结局篇)</p>
+<h2>我的问题</h2>
 
-<h3>Algorithm</h3>
+<p>OO作为一个时代发展的产物本身没有问题,60年代就出现了OO的概念,后续也出现了一些语言支持,90年代相关理论基本已经完善,等到我学的时候,接触到的都是一些最直接的概念以及大牛们迷恋式的布道,当时的学习方式就是记住相关概念,拜读大牛书籍,然后按模式coding.这样的学习过程带来了极大的问题,因为我把OO看的太形而上,把OO当救世主,认为OO能作为一个可理解性极好的模型来描述世界,殊不知OO并非完美.</p>
 
-<p>貌似使用了基本的mark-and-sweep来实现,但是没有compact,很经典的实现,早期的IBM JDK1.4就采用了该算法,提供compact和增量收集.貌似性能最佳实践中也提到了pre-thread allocation pool,降低了临时对象分配的开销,使用dlmalloc(bionic lib中的版本)来分配内存,doug lea大神再次出现了&#8230;&#8230;..<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">大神的作品</a>,有些过时,但在当时看来应该是篇神作.</p>
+<h2>回顾历史</h2>
 
-<h3>Fragmentation</h3>
+<p>人们发现当软硬件日益复杂化,代码的维护成本越来越高,需要有一种更加有效和直观的方式来组织不同的代码单元,降低耦合,提高可维护性.60年代OO概念开始出现,后续出现多种支持OOP的语言,相关的概念也逐步形成:动态分派,封装,继承,多态,开放递归等等.对比类似c的以function来组织代码单元的方式,OO则以object作为一等公民,每个object都具备了接收消息,处理数据,发送消息的能力,对象与对象之间通过消息通讯,对象作为系统内部一个独立的&#8221;机器&#8221;,具备独立的状态和能力,用这样的方式,OO同样提供了有效组织代码单元,代码重用,模块化协作的能力.</p>
 
-<p>没有compact,可能会面临fragmentation的问题,对于长时间运行的程序来说,该问题有可能存在,dlmalloc使用了chunk块来尽量避免外部fragmentation问题,出现问题只能在应用层考虑如何避免,没有查到关于后续实现generation based的信息,对于管理几十兆内存来说,mark-and-sweep应该是合理的,足以应付大多数的情况.</p>
+<h2>问题</h2>
 
-<h3>coding</h3>
+<p>在把OO作为巴别塔的人群中,人们很自然的传播着对于OO的迷恋,但OO并非完美的理论, Bertrand Meyer argues in Object-Oriented Software Construction[21] that a program is not a model of the world but a model of some part of the world,后续也出现了经典的问题,如圆和椭圆的问题.</p>
 
-<p>官方关于memory的最佳实践有多大的参考价值呢?只是强调不要创建无用的对象,而刚刚提到的fragmentation问题只字未提.</p>
+<p>object作为一等公民,对象成为代码组织方式的核心,进而引入了潜在的易变性问题,而后有人总结并提出面向接口编程,为什么,因为接口才是契约,它无状态,任何的实现必须符合接口提供的规范,同样的输入得到同样的输出,simple and easy,有了这个契约我们才真正的无需关心细节!但我们不能什么都基于接口来编程,我们需要把握某种度,而这种度似乎无法完全掌握,需要case by case.美好的OO编程,其实不像很多迷恋者想的,能够自然且方便的编程,如果没有一些深入的学习,例如了解OO相关的发展过程,概念,优势和劣势等等.我想,用OO写的程序比procedure-oriented更容易出错,而且更容易在程序日益复杂后变得无法维护,难以解耦,可测试性无法与procedure-oriented相比.这显然是有些违背了OO的初衷,同时我们也发现OO其实不是看上去那么易于上手.</p>
 
-<pre><code>Avoid Creating Unnecessary Objects
+<p>同样的输入得到同样的输出(Design By Contract),当我们的程序能够符合某种契约时,很多问题都变得更加的简单化,例如用FP来编程,function作为一等公民,没有易变性,function是比Object更小的单元,可以玩出很多OO中无法玩出的花样,例如闭包,更容易的代码重用,更强的可测试性.所以有很多大牛们推荐学习FP,不是说我们都直接用FP,而是通过对比能更好的看清OO的问题并在日后的coding中借鉴FP的理念.毕竟OO天生就不完美,它与编程的本质似乎存在阻抗不匹配.</p>
 
-Object creation is never free.A generational GC with per-thread allocation pools for temporary objects can make allocation cheaper, but allocating memory is always more expensive than not allocating memory.
+<p>OO对于并发的影响大牛们也提到了,这个点我还没明确,现在能想到的是在多核环境下,需要很小心的处理数据的组织形式和读写(缓存抖动,作色,缓存命中率),而OO则天然的决定了数据的组织形式不能从计算机本质的角度出发,后续再分析吧.</p>
 
-If you allocate objects in a user interface loop, you will force a periodic garbage collection, creating little "hiccups" in the user experience. The concurrent collector introduced in Gingerbread helps, but unnecessary work should always be avoided.
+<h2>启示</h2>
 
-Thus, you should avoid creating object instances you don't need to. Some examples of things that can help:
+<ul>
+<li>找个FP语言学学,有很多好处</li>
+<li>应付应试教育的那套学习方法总是无法带来对本质的认知,而只有挖掘本质才能顿悟.</li>
+</ul>
 
-If you have a method returning a string, and you know that its result will always be appended to a StringBuffer anyway, change your signature and implementation so that the function does the append directly, instead of creating a short-lived temporary object.
-When extracting strings from a set of input data, try to return a substring of the original data, instead of creating a copy. You will create a new String object, but it will share the char[] with the data. (The trade-off being that if you're only using a small part of the original input, you'll be keeping it all around in memory anyway if you go this route.)
 
-A somewhat more radical idea is to slice up multidimensional arrays into parallel single one-dimension arrays:
+<h2>参考</h2>
 
-An array of ints is a much better than an array of Integers, but this also generalizes to the fact that two parallel arrays of ints are also a lot more efficient than an array of (int,int) objects. The same goes for any combination of primitive types.
-If you need to implement a container that stores tuples of (Foo,Bar) objects, try to remember that two parallel Foo[] and Bar[] arrays are generally much better than a single array of custom (Foo,Bar) objects. (The exception to this, of course, is when you're designing an API for other code to access; in those cases, it's usually better to trade good API design for a small hit in speed. But in your own internal code, you should try and be as efficient as possible.)
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Object-oriented">OO Wikipedia</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Object-oriented">Design By Contract</a></li>
+<li><a href="http://www.infoq.com/presentations/Are-We-There-Yet-Rich-Hickey">Are We There Yet?</a>
+这篇文章偶会再分析分析,作者level太高,演讲信息量极大,还有些不理解,后续再记录心得.</li>
+<li><a href="http://en.wikipedia.org/wiki/Object-Oriented_Software_Construction">OO software construction</a>
+这本书没有中文版,国内关注的人很少(这个结论来自于<a href="http://book.douban.com/subject/1547078/">豆瓣上的关注度</a>),然而却被广泛的认为是OOP的经典之作,可以作为众多计算机书籍的参考标准,并在1994年获得Jolt大奖,不知道有多少人都在OO的世界里迷茫,看完以上资料或许您就能被救赎.</li>
+</ul>
 
-Generally speaking, avoid creating short-term temporary objects if you can. Fewer objects created mean less-frequent garbage collection, which has a direct impact on user experience.
-</code></pre>
-
-<p>我没有感觉到有啥价值,看官方介绍不如把effective java多读几遍,对大对象分配和循环内部的对象创建小心一点,热点代码注意分析.特别是对于应用会申请大内存又会销毁,这种情况可以在应用层提供大对象复用的缓存机制,避免被销毁,而是一直使用,通过应用层代码来控制大对象空间的存取.否则,随意的大对象分配和销毁对于长时间运行的App来说就是个灾难.或者就只能往NDK上面想办法了,NDK还不太了解,内存应该不计算在heap内的吧</p>
 </div>
 
 
@@ -163,12 +166,12 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
   
 
 
-<time datetime="2012-09-14T15:08:00+08:00" pubdate data-updated="true">Sep 14<span>th</span>, 2012</time>
+<time datetime="2012-10-16T15:52:00+08:00" pubdate data-updated="true">Oct 16<span>th</span>, 2012</time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/android/'>android</a>, <a class='category' href='/blog/categories/dalvik/'>dalvik</a>, <a class='category' href='/blog/categories/fragmantation/'>fragmantation</a>, <a class='category' href='/blog/categories/gc/'>gc</a>, <a class='category' href='/blog/categories/malloc/'>malloc</a>
+    <a class='category' href='/blog/categories/fp/'>FP</a>, <a class='category' href='/blog/categories/oop/'>OOP</a>
   
 </span>
 
@@ -177,7 +180,7 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/" data-via="" data-counturl="http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://songjie-dong.github.com/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/" data-via="" data-counturl="http://songjie-dong.github.com/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/" >Tweet</a>
   
   
   
@@ -186,10 +189,8 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
     
     <p class="meta">
       
-        <a class="basic-alignment left articlenav" href="/blog/2012/09/09/android-gao-xiao-he-oozhi-jian-de-xuan-ze/" title="Previous Post: android菜鸟的吐槽1">&laquo; android菜鸟的吐槽1</a>
+        <a class="basic-alignment left articlenav" href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/" title="Previous Post: weak reference 原理分析">&laquo; weak reference 原理分析</a>
       
-      
-        <a class="basic-alignment right articlenav" href="/blog/2012/09/23/shen-ru-li-jie-ji-suan-ji-malloc/" title="Next Post: dalvik内存分配无碎片的思考">dalvik内存分配无碎片的思考 &raquo;</a>
       
     </p>
   </footer>
@@ -288,8 +289,8 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/';
-        var disqus_url = 'http://songjie-dong.github.com/blog/2012/09/14/dalvik-gckai-pian/';
+        var disqus_identifier = 'http://songjie-dong.github.com/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/';
+        var disqus_url = 'http://songjie-dong.github.com/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/';
         var disqus_script = 'embed.js';
       
     (function () {
