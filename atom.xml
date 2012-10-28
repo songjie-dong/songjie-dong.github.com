@@ -4,7 +4,7 @@
   <title><![CDATA[All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-10-22T16:07:06+08:00</updated>
+  <updated>2012-10-28T15:56:07+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -12,6 +12,62 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[is parallel programming hard? -1]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/10/26/is-parallel-programming-hard-1/"/>
+    <updated>2012-10-26T18:10:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/10/26/is-parallel-programming-hard-1</id>
+    <content type="html"><![CDATA[<h2>迷思</h2>
+
+<p>“Is Parallel Programming Hard, And, If So, What Can You Do About It?”,这本书很久就知道,一直没怎么看过,多半对于并行的理解来自于工作中需要对java处理并行的方式有一定的了解,所以看了不算关于JVM内存模型,线程安全控制,doug lea的并发包处理,深入理解计算机等等相关的书籍,文档和blog,但知识体系不够完整,所以这个系列记录一些阅读本书的笔记</p>
+
+<h2>关于CPU</h2>
+
+<p>作者开篇介绍了有些粗心的人对于CPU的理解就像在没有障碍的赛道上跑步,总能保持较快的速度,但事实上除了一些计算密集型的场景以外,绝大多数的程序相比于竞速赛跑来说更像是越野障碍赛,下面我们就一起看看有哪些障碍.</p>
+
+<h3>流水线</h3>
+
+<p>现代CPU引入了流水线机制,将不同指令放到不同的流水线执行,这意味着在微观世界里,指令执行的顺序很可能与我们看到的不一样,但会保证执行结果的一致性,这就是指令的重排序过程,重排序可以更充分的利用cpu的流水线机制更迅速的执行指令.但重排序机制也引入了一个问题:需要预取指令,这对于在运行时的条件分支预测提出了挑战,如果你在一个频繁执行的循环中加入一个if else,而这个if else的分支路线分布随机,则难以预测,进而导致流水线无法充分利用.</p>
+
+<h3>内存读写</h3>
+
+<p>CPU的性能的提升速度明显高于内存的访问性能,这导致了CPU访问内存逐渐成为了,于是高速缓存的命中率对于性能来说至关重要,而类似链表这种结构显然就不是缓存友好的结构,数组则更加适合(空间局部性).对于单核来说高速缓存能很好的解决内存访问的性能瓶颈,对于多核来说则引入了而外的问题.</p>
+
+<h3>atomic&amp;memory barrier</h3>
+
+<p>现代CPU都提供了原子操作的指令,该指令保证了对单个数据操作的原子性和可见性,memory barrier就是用来保证指令的顺序不会由于重排序破坏了原子性.但barrier机制降低了流水线的使用效率,另外atomic操作结束会将数据直接写内存,保证可见性.</p>
+
+<h3>cache misses</h3>
+
+<p>多核的cache各自独立,进而导致了我们需要避免缓存数据在多个核存在的情况,这会导致cpu之间相互传递数据,引入而外的开销(false shareing),作者在后续文章中提到关于数组实现的并发的计数器设计中需要考虑在数组中增加填充物来避免false sharing问题.</p>
+
+<h2>编程</h2>
+
+<p>以单核平均执行指令数来衡量并行的性能,以上述机制来分析,需要关注的点:</p>
+
+<h3>cache misses</h3>
+
+<p>高速缓存的命中率问题,我们要关注context switch的次数,这就需要间接的关注程序中可能的block因素,IO,锁等等都可能block线程导致context switch.
+而context switch后高速缓存需要重新warm-up</p>
+
+<p>过多的线程迁移也会导致类似的问题.</p>
+
+<p>空间局部性,多用数组这种结构,但要注意多核的false sharing问题.</p>
+
+<p>时间局部性</p>
+
+<p>避免不必要的同步和原子操作,有时它们会强制访问内存数据.</p>
+
+<h3>分支预测</h3>
+
+<p>写出分支预测友好的代码,必要情况下可以hard coding或者用mapping来消除if else</p>
+
+<h3>共享</h3>
+
+<p>共享数据总是万恶之源.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[再看面向对象]]></title>
