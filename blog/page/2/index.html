@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="5年前，当我们一群同学踌躇满志杀入IT行业，进入了职场打拼，我们都是怀着自己的梦想，希望通过自己的努力证明自己的能力，5年过去了，剩下了几个，又剩下几个还怀着梦想的人，更多的都是在养老或者混日子或者怨天尤人。 刚开始工作那会，我们经常聚会，吃吃喝喝，工作中的苦恼都消散在我们的酒桌上， &hellip;">
+  <meta name="description" content="短暂的百年阿里之旅，仿佛让我又回到了大学时代，大家一起做游戏，一起感悟人生，一起体会阿里的价值观，也留下了很多难忘的回忆。 在这里我结识了一帮朋友，大家一起在游戏中，在讲师的各种故事中慢慢的体会到什么是客户第一，团队合作，拥抱变化，激情，敬业，诚信。为了小组最后的价值观表演我们连续两天排练到很晚， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -73,6 +73,56 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-11T11:30:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>短暂的百年阿里之旅，仿佛让我又回到了大学时代，大家一起做游戏，一起感悟人生，一起体会阿里的价值观，也留下了很多难忘的回忆。</p>
+
+<p>在这里我结识了一帮朋友，大家一起在游戏中，在讲师的各种故事中慢慢的体会到什么是客户第一，团队合作，拥抱变化，激情，敬业，诚信。为了小组最后的价值观表演我们连续两天排练到很晚，回家睡觉时都两点了，最后我还献出了人生中第一次的反串（感觉阿里人都好这口），难忘拓展时大家挺着烈日完成了一个个的任务，彼此信任，互相鼓励，我所在的团队还拿到了最后的冠军，我也得到了一枚小太阳虽然这枚小太阳我弄丢了，但是团队中每一个成员都没有因此责怪我。另外对于团队这两个字的我现在有了更深刻的认识，那就是行动前需要周密的计划与决策，一旦决定，团队必须坚决的执行，除非决策者提出新的方案，只有这样才能保证在高标准，高压力的工作中不断的前进。</p>
+
+<p>对于工作三年的我来说，也经历了很多的事，心中的那个杯子早已不再是空的，我有自己的价值观对于各种事情都有自己很主观的看法，我很明确自己的目标。在培训期间我一直在思考，因为在这里，在阿里有些不一样的东西，有些是我早已忘却的宝贵东西，现在我又重新找到了，很庆幸我能够参加这次培训，它给了我很多，很多。。。</p>
+
+<p>David说了一个字，我印象深刻，那就是德字，在目前的中国，乃至放眼全球，有多少企业能做到这个德字，又有多少企业家在慢慢的丢失掉自己的德。百年阿里，这是个伟大的事业，我也愿意与所有的阿里同仁们一起为这个事业添砖加瓦！从现在开始我任然不是空杯，只是杯子里的水不再浑浊。</p>
+
+<hr />
+
+<p>这篇旧文很可爱&#8230;.希望我能永远保持有这样的心境</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -408,78 +458,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/09/23/shen-ru-li-jie-ji-suan-ji-malloc/">Dalvik内存分配无碎片的思考</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-23T16:56:00+08:00" pubdate data-updated="true">Sep 23<span>rd</span>, 2012</time>
-        
-         | <a href="/blog/2012/09/23/shen-ru-li-jie-ji-suan-ji-malloc/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近看dalvik的gc机制,发现没啥太多资料,但是注意到了dalvik并没有做内存整理,也就是compact阶段,传言内部有一些机制来避免碎片形成,很好奇,分析一下</p>
-
-<h2>一些概念</h2>
-
-<h3>动态内存分配器 dynamic memory allocator</h3>
-
-<p>何为<strong>动态内存分配</strong>,大家知道,在有些时候我们并不能一开始就知道需要用到的内存,比如读取一班级的所有同学信息到一个数组,数组的大小取决于运行时以某种方式查询获知,于是我们需要在运行时分配内存.无论是在vm上跑的java还是在操作系统里跑的c,对于内存的使用都会包含一下的基本部分,栈,固定的分配好的区域,堆,栈里面的数据是操作系统或vm会处理分配和释放,堆(heap)则负责动态内存分配,java和c不同的是jvm使用的<strong>隐式分配器</strong>,而c则是<strong>显式分配器</strong>,区别就是一个有gc,new出来就可以,另一个则由我们自己显式malloc和free.</p>
-
-<h3>碎片</h3>
-
-<p>jvm的<strong>current mark and sweep</strong>收集器提供了可选的compact功能,即整理内存,或者形象点说就是把内存压实,把空的缝隙的给挤掉.这里的碎片指的是<strong>外部碎片</strong>.我们把内存看成一大块连续的内存空间,而且空间可以<strong>伸缩</strong>(<strong>sbrk</strong>),当我们需要使用内存的时候,则在这块空间中寻找合适的位置存放数据,假设我们每次都从heap的头位置开始寻找,一旦找到合适的闲置块就分配,free时则直接标记该块未使用这种方式,进程运行初期总是分配小块内存使用,于是在运行一段时候后,整个heap被分割成了很多的小块,此时如果突然开始出现大数据块的分配请求,则很可能无法找到合适的位置只能请求新的空间.(当然这是malloc极端简单的分配策略)</p>
-
-<p><strong>内部碎片</strong>是相对于外部碎片而言的,讨论内部碎片往往意味着分配器采用了不同于刚刚的分配策略,以<strong>memcached</strong>为例,memcached的内存管理策略是将内存分为不同的classes,假设一个class总长度1m,然后将其等分为固定大小的chunk,比如等分成16份,则每个chunk为64k,一个chunk为最小的分配单元,memcached用<strong>O(1)</strong>(为什么可以做到O(1),用上述的简单内存分配策略能否做到呢?)的时间寻找最合适的chunk来存储数据,但是无论如何分配,每个chunk都很难被100%使用,这就产生了内部碎片.划分classes的方法可以很好的提高分配效率,但同时也需要一些<strong>启发式的策略</strong>来优化内存有效使用率.PS:由于memcached的内存分配很死板,如果内存已经被各种不同chunk大小的classes占满,class分布完成则无法改变,这等于是把启发式策略做了一半,现在貌似在改进了.</p>
-
-<h2>经典</h2>
-
-<ul>
-<li>dlmalloc
-doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">A Memory Allocator</a>,此文讲的很全面,特别是对于何为优秀的内存分配器,提了八个点.里面的一些分配器实现的理念被后续沿用,算是必读文章之一,不过内容有些滞后,很多dlmalloc后续的更新并没有描述.</li>
-<li>jemalloc
-增加了对于多核的分配优化,将内存分成不同的Arena,避免部分场景分配时竞争带来的开销,jvm中同样有类似的概念TLAB(Thead local allocate buffer),对于小对象的分配直接在thread独占的区域分配.记得里面还提到了缓存作色的优化.</li>
-<li>tcmalloc
-类似jemalloc,有些测试结果表明性能更好,缺点是需要关注内存的有效使用率,分配速度和内存有效使用率是分配器设计时需要取舍的.PS:如果想研究分配器,可以读读代码,应该很不错.</li>
-</ul>
-
-
-<h2>分配器总结</h2>
-
-<p><strong>多核,多线程</strong>的分配优化,<strong>缓存作色</strong>,内存有效使用率(使用划分固定大小chunk的机制会提高分配的效率,降低分配高性能实现的复杂度,但不可避免的会有内存有效使用率的问题,需要一些启发式的优化策略,具体取舍看场景,内存很宝贵则可以在分配速度上让步,二者难以兼得,相关知识建议直接看深入理解计算机相关章节,想挖坑的可以看论文),这些问题都是现代分配器高性能的关键词.</p>
-
-<h2>题外话</h2>
-
-<p>回过头来看jvm,为啥老有碎片呢&#8230;难道是为了顾及一次书写,到处执行，so内部实现的内存管理实现的通用内存分配来跨平台?问题很多哇,可时间不多~,后续研究，碎叫~</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -522,11 +500,15 @@ doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.h
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/06/ci-shi-ci-ke/">此时此刻</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2012/10/26/is-parallel-programming-hard-1/">is parallel programming hard? -1</a>
@@ -542,10 +524,6 @@ doug lea大神的作品,参见<a href="http://gee.cs.oswego.edu/dl/html/malloc.h
     
       <li class="post">
         <a href="/blog/2012/10/11/bdbxue-xi-bi-ji/">BDB学习笔记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a>
       </li>
     
   </ul>
