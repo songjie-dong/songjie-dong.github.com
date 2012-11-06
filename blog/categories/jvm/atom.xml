@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: JVM | All Things Coding]]></title>
+  <link href="http://songjie-dong.github.com/blog/categories/jvm/atom.xml" rel="self"/>
+  <link href="http://songjie-dong.github.com/"/>
+  <updated>2012-11-07T01:40:19+08:00</updated>
+  <id>http://songjie-dong.github.com/</id>
+  <author>
+    <name><![CDATA[Songjie Dong]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[字节序与java]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/11/07/zi-jie-xu-yu-java/"/>
+    <updated>2012-11-07T01:13:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/11/07/zi-jie-xu-yu-java</id>
+    <content type="html"><![CDATA[<p>所谓字节序也就是字节在内存中存放的顺序,分为大端(big endian,低位存放高字节)和小端(little endian,低位存放低字节),再来又有主机序和网络序之说,主机序就是当前主机的字节序,说白点就是CPU的字节序,而CPU的字节序由于历史原因,分为不同的阵营,intel是小端,摩托,IBM,SUN则是大端,至于java,不用说,肯定得站对队伍了.使用c语言可以很快速的判断当前机器的endian,int i = 1 变量强转char*,这样可以取到低位值判断是否任然等于1即可.网络序就是在网络传输过程中的顺序,基于未知原因(有人说是抛硬币决定),网络序固定为big endian,不管怎样,固定更加有利于我们程序的健壮性,因为我们只需要处理一种情况,同时也可以节约码农的时间,避免诡异的错误.</p>
+
+<p>废话完毕,说说java中的字节序,网上传言java都是big endian,这个观点本身由于说的太绝对是有一些误导性的,特别是对于以上内容了解不细致的时候,其实作为java来说只是在规范中约定了class文件和操作数都是big endian,同时也有人补充说明所有的流都是big endian,<a href="http://docs.oracle.com/javase/6/docs/api/java/nio/ByteOrder.html#nativeOrder%28%29">nativeOrder</a>可以读取当前机器的字节序作为参考,只在性能极其敏感的场景在所分配的direct buffer实现与硬件一致的字节序.所以在java中我们定义一个int变量并赋值后,变量本身的字节序任然取决于硬件本身,不要被误导了.</p>
+]]></content>
+  </entry>
+  
+</feed>
