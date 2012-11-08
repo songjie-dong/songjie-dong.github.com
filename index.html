@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="所谓字节序也就是字节在内存中存放的顺序,分为大端(big endian,低位存放高字节)和小端(little endian,低位存放低字节),再来又有主机序和网络序之说,主机序就是当前主机的字节序,说白点就是CPU的字节序,而CPU的字节序由于历史原因,分为不同的阵营,intel是小端,摩托, &hellip;">
+  <meta name="description" content="纠结 两个嵌套的循环,一个假设10000000次,一个假设100次,把两个循环次数颠倒一下,是否存在性能差异的问题. 解释执行 从代码来分析,如果外层循环较大,则内层循环的循环变量会被更多次的使用,这是个隐性的开销,而内层循环里的代码,在两种情况下执行指令的次数是一致的,所以外层循环较大则性能较差 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +85,56 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/11/08/xun-huan-xiao-lu-de-jiu-jie/">循环效率的纠结</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-08T10:13:00+08:00" pubdate data-updated="true">Nov 8<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/11/08/xun-huan-xiao-lu-de-jiu-jie/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>纠结</h2>
+
+<p>两个嵌套的循环,一个假设10000000次,一个假设100次,把两个循环次数颠倒一下,是否存在性能差异的问题.</p>
+
+<h2>解释执行</h2>
+
+<p>从代码来分析,如果外层循环较大,则内层循环的循环变量会被更多次的使用,这是个隐性的开销,而内层循环里的代码,在两种情况下执行指令的次数是一致的,所以外层循环较大则性能较差.</p>
+
+<h2>JIT</h2>
+
+<p>通常循环达到一定的次数回边计数超过阀值,则出发JIT编译,而后上述基于栈的指令体系下出现的指令数差异则不复存在了,而需要看编译后的差异,这个差异在不同的机器上表现有些不一样,即使是同样的环境,而会略有不同,但用perf分析后,发现执行的指令数,耗时,分支预测错误率,线程cpu迁移都没有数量级的差异.可以说性能基本一致.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -341,323 +391,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/">Weak Reference 原理分析</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T12:33:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>前言</h2>
-
-<p>若干年前看了Java的四种引用类型，只是简单知道了不同类型的作用，但对其实现原理一直未能想明白，本文尝试结合jdk，openjdk6的部分源码分析弱引用实现的原理，供大家参考，部分技术细节没有仔细研究，如有疑问欢迎留言讨论</p>
-
-<h2>实例分析</h2>
-
-<p>我们以WeakHashMap的处理过程为例介绍一个weak reference的生命周期，首先我们调用WeakHashMap的put方法放入对象到Map中，WeakHashMap的Entry继承了WeakReference</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="kd">extends</span> <span class="n">WeakReference</span><span class="o">&lt;</span><span class="n">K</span><span class="o">&gt;</span> <span class="kd">implements</span> <span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="o">{</span>
-</span><span class='line'>   <span class="kd">private</span> <span class="n">V</span> <span class="n">value</span><span class="o">;</span>
-</span><span class='line'>   <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">hash</span><span class="o">;</span>
-</span><span class='line'>   <span class="kd">private</span> <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">next</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>下面是put的部分代码</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">e</span> <span class="o">=</span> <span class="n">tab</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
-</span><span class='line'>        <span class="n">tab</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;(</span><span class="n">k</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="n">queue</span><span class="o">,</span> <span class="n">h</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(++</span><span class="n">size</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="o">)</span>
-</span><span class='line'>            <span class="n">resize</span><span class="o">(</span><span class="n">tab</span><span class="o">.</span><span class="na">length</span> <span class="o">*</span> <span class="mi">2</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>注意new Entry传递了一个reference queue到构造函数中，此构造函数最终会调用Reference的构造函数</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>
-</span><span class='line'><span class="n">Reference</span><span class="o">(</span><span class="n">T</span> <span class="n">referent</span><span class="o">,</span> <span class="n">ReferenceQueue</span><span class="o">&lt;?</span> <span class="kd">super</span> <span class="n">T</span><span class="o">&gt;</span> <span class="n">queue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">referent</span> <span class="o">=</span> <span class="n">referent</span><span class="o">;</span>
-</span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">queue</span> <span class="o">=</span> <span class="o">(</span><span class="n">queue</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">?</span> <span class="n">ReferenceQueue</span><span class="o">.</span><span class="na">NULL</span> <span class="o">:</span> <span class="n">queue</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>referent是我们之前传入的hashmap的key对象，queue的作用是用来读取referent被回收的weak reference，生产者是谁后续介绍，此时WeakHashMap中已经存在了一个对象，先将key对象的strong ref制空并尝试触发gc，比如使用System.gc()来显式的触发gc，然后调用WeakHashMap的size方法返回集合的个数，绝大多数情况下会是0，这个过程中发生了什么呢？</p>
-
-<p>第一步，key没有可达的strong ref，仅仅存在一个weak reference的referent变量仍然指向了key，触发GC时，以openjdk6的parNew为例，jvm在young generation gc时会尝试获取Reference对象里的静态全局锁</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/* Object used to synchronize with the garbage collector.  The collector </span>
-</span><span class='line'><span class="cm">     * must acquire this lock at the beginning of each collection cycle.  It is </span>
-</span><span class='line'><span class="cm">     * therefore critical that any code holding this lock complete as quickly </span>
-</span><span class='line'><span class="cm">     * as possible, allocate no new objects, and avoid calling user code. </span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">class</span> <span class="nc">Lock</span> <span class="o">{</span> <span class="o">};</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Lock</span> <span class="n">lock</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Lock</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在openjdk6里的部分源代码,完整代码请参考instanceRefKlass.cpp文件</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="kt">void</span> <span class="n">instanceRefKlass</span><span class="o">::</span><span class="n">acquire_pending_list_lock</span><span class="p">(</span><span class="n">BasicLock</span> <span class="o">*</span><span class="n">pending_list_basic_lock</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// we may enter this with pending exception set </span>
-</span><span class='line'>  <span class="n">PRESERVE_EXCEPTION_MARK</span><span class="p">;</span>  <span class="c1">// exceptions are never thrown, needed for TRAPS argument </span>
-</span><span class='line'>  <span class="n">Handle</span> <span class="n">h_lock</span><span class="p">(</span><span class="n">THREAD</span><span class="p">,</span> <span class="n">java_lang_ref_Reference</span><span class="o">::</span><span class="n">pending_list_lock</span><span class="p">());</span>
-</span><span class='line'>  <span class="n">ObjectSynchronizer</span><span class="o">::</span><span class="n">fast_enter</span><span class="p">(</span><span class="n">h_lock</span><span class="p">,</span> <span class="n">pending_list_basic_lock</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span> <span class="n">THREAD</span><span class="p">);</span>
-</span><span class='line'>  <span class="n">assert</span><span class="p">(</span><span class="n">ObjectSynchronizer</span><span class="o">::</span><span class="n">current_thread_holds_lock</span><span class="p">(</span>
-</span><span class='line'>           <span class="n">JavaThread</span><span class="o">::</span><span class="n">current</span><span class="p">(),</span> <span class="n">h_lock</span><span class="p">),</span>
-</span><span class='line'>         <span class="s">&quot;Locking should have succeeded&quot;</span><span class="p">);</span>
-</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">HAS_PENDING_EXCEPTION</span><span class="p">)</span> <span class="n">CLEAR_PENDING_EXCEPTION</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p> 此处代码在parNew gc时执行，目的就是尝试获取全局锁，在gc完成后，jvm会将key被回收的weak reference组成一个queue并赋值到Reference的pending属性然后释放锁，参考方法：</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="kt">void</span> <span class="n">instanceRefKlass</span><span class="o">::</span><span class="n">release_and_notify_pending_list_lock</span><span class="p">(</span>
-</span><span class='line'>  <span class="n">BasicLock</span> <span class="o">*</span><span class="n">pending_list_basic_lock</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// we may enter this with pending exception set </span>
-</span><span class='line'>  <span class="n">PRESERVE_EXCEPTION_MARK</span><span class="p">;</span>  <span class="c1">// exceptions are never thrown, needed for TRAPS argument </span>
-</span><span class='line'>  <span class="c1">// </span>
-</span><span class='line'>  <span class="n">Handle</span> <span class="n">h_lock</span><span class="p">(</span><span class="n">THREAD</span><span class="p">,</span> <span class="n">java_lang_ref_Reference</span><span class="o">::</span><span class="n">pending_list_lock</span><span class="p">());</span>
-</span><span class='line'>  <span class="n">assert</span><span class="p">(</span><span class="n">ObjectSynchronizer</span><span class="o">::</span><span class="n">current_thread_holds_lock</span><span class="p">(</span>
-</span><span class='line'>           <span class="n">JavaThread</span><span class="o">::</span><span class="n">current</span><span class="p">(),</span> <span class="n">h_lock</span><span class="p">),</span>
-</span><span class='line'>         <span class="s">&quot;Lock should be held&quot;</span><span class="p">);</span>
-</span><span class='line'>  <span class="c1">// Notify waiters on pending lists lock if there is any reference. </span>
-</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">java_lang_ref_Reference</span><span class="o">::</span><span class="n">pending_list</span><span class="p">()</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">ObjectSynchronizer</span><span class="o">::</span><span class="n">notifyall</span><span class="p">(</span><span class="n">h_lock</span><span class="p">,</span> <span class="n">THREAD</span><span class="p">);</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>  <span class="n">ObjectSynchronizer</span><span class="o">::</span><span class="n">fast_exit</span><span class="p">(</span><span class="n">h_lock</span><span class="p">(),</span> <span class="n">pending_list_basic_lock</span><span class="p">,</span> <span class="n">THREAD</span><span class="p">);</span>
-</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">HAS_PENDING_EXCEPTION</span><span class="p">)</span> <span class="n">CLEAR_PENDING_EXCEPTION</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在一次gc后，Reference对象的pending属性不再为空，让我们看看Reference的部分代码
-首先是pending属性的说明：</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/* List of References waiting to be enqueued.  The collector adds </span>
-</span><span class='line'><span class="cm"> * References to this list, while the Reference-handler thread removes </span>
-</span><span class='line'><span class="cm"> * them.  This list is protected by the above lock object. </span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="n">Reference</span> <span class="n">pending</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>接下来是Reference中的内部类ReferenceHandler，它继承了Thread，看看run方法的代码</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(;;)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Reference</span> <span class="n">r</span><span class="o">;</span>
-</span><span class='line'>        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">pending</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">r</span> <span class="o">=</span> <span class="n">pending</span><span class="o">;</span>
-</span><span class='line'>            <span class="n">Reference</span> <span class="n">rn</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">next</span><span class="o">;</span>
-</span><span class='line'>            <span class="n">pending</span> <span class="o">=</span> <span class="o">(</span><span class="n">rn</span> <span class="o">==</span> <span class="n">r</span><span class="o">)</span> <span class="o">?</span> <span class="kc">null</span> <span class="o">:</span> <span class="n">rn</span><span class="o">;</span>
-</span><span class='line'>            <span class="n">r</span><span class="o">.</span><span class="na">next</span> <span class="o">=</span> <span class="n">r</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">lock</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
-</span><span class='line'>            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">x</span><span class="o">)</span> <span class="o">{</span> <span class="o">}</span>
-</span><span class='line'>            <span class="k">continue</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// Fast path for cleaners </span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">r</span> <span class="k">instanceof</span> <span class="n">Cleaner</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="o">((</span><span class="n">Cleaner</span><span class="o">)</span><span class="n">r</span><span class="o">).</span><span class="na">clean</span><span class="o">();</span>
-</span><span class='line'>            <span class="k">continue</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ReferenceQueue</span> <span class="n">q</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">queue</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">q</span> <span class="o">!=</span> <span class="n">ReferenceQueue</span><span class="o">.</span><span class="na">NULL</span><span class="o">)</span> <span class="n">q</span><span class="o">.</span><span class="na">enqueue</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>一旦jvm notify了前面提到的锁，这个线程就被激活并开始执行，作用是将之前jvm赋值过来的pending对象中的WeakReference对象enqueue到指定的队列中，比如WeakHashMap内部定义的ReferenceQueue属性
-此时map的queue中保存了referent已经被回收的WeakReference队列，也就是map的Entry对象，当调用size方法时，内部首先调用expungStaleEntries方法清除被回收掉的Entry，代码如下</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kt">void</span> <span class="nf">expungeStaleEntries</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">e</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">while</span> <span class="o">(</span> <span class="o">(</span><span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;)</span> <span class="n">queue</span><span class="o">.</span><span class="na">poll</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="kt">int</span> <span class="n">h</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="na">hash</span><span class="o">;</span>
-</span><span class='line'>            <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">indexFor</span><span class="o">(</span><span class="n">h</span><span class="o">,</span> <span class="n">table</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">table</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
-</span><span class='line'>            <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">p</span> <span class="o">=</span> <span class="n">prev</span><span class="o">;</span>
-</span><span class='line'>            <span class="k">while</span> <span class="o">(</span><span class="n">p</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">Entry</span><span class="o">&lt;</span><span class="n">K</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">next</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">next</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">if</span> <span class="o">(</span><span class="n">p</span> <span class="o">==</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="k">if</span> <span class="o">(</span><span class="n">prev</span> <span class="o">==</span> <span class="n">e</span><span class="o">)</span>
-</span><span class='line'>                        <span class="n">table</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">next</span><span class="o">;</span>
-</span><span class='line'>                    <span class="k">else</span>
-</span><span class='line'>                        <span class="n">prev</span><span class="o">.</span><span class="na">next</span> <span class="o">=</span> <span class="n">next</span><span class="o">;</span>
-</span><span class='line'>                    <span class="n">e</span><span class="o">.</span><span class="na">next</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>  <span class="c1">// Help GC </span>
-</span><span class='line'>                    <span class="n">e</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span> <span class="c1">//  &quot;   &quot; </span>
-</span><span class='line'>                    <span class="n">size</span><span class="o">--;</span>
-</span><span class='line'>                    <span class="k">break</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="n">prev</span> <span class="o">=</span> <span class="n">p</span><span class="o">;</span>
-</span><span class='line'>                <span class="n">p</span> <span class="o">=</span> <span class="n">next</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ok，就这样map的废弃Entry被clear，size返回为0</p>
-
-<h2>参考</h2>
-
-<ul>
-<li><a href="http://weblogs.java.net/blog/2006/05/04/understanding-weak-references">understanding-weak-references</a></li>
-<li><a href="http://stackoverflow.com/questions/154724/when-would-you-use-a-weakhashmap-or-a-weakreference">when-would-you-use-a-weakhashmap-or-a-weakreference</a></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -698,11 +431,15 @@
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/performance'>performance (3)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (4)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/08/xun-huan-xiao-lu-de-jiu-jie/">循环效率的纠结</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2012/11/07/zi-jie-xu-yu-java/">字节序与java</a>
@@ -718,10 +455,6 @@
     
       <li class="post">
         <a href="/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/">再看面向对象</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/11/weak-reference-yuan-li-fen-xi/">weak reference 原理分析</a>
       </li>
     
   </ul>

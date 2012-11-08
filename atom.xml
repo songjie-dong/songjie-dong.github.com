@@ -4,7 +4,7 @@
   <title><![CDATA[All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-11-07T14:38:43+08:00</updated>
+  <updated>2012-11-08T12:19:35+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -12,6 +12,25 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[循环效率的纠结]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/11/08/xun-huan-xiao-lu-de-jiu-jie/"/>
+    <updated>2012-11-08T10:13:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/11/08/xun-huan-xiao-lu-de-jiu-jie</id>
+    <content type="html"><![CDATA[<h2>纠结</h2>
+
+<p>两个嵌套的循环,一个假设10000000次,一个假设100次,把两个循环次数颠倒一下,是否存在性能差异的问题.</p>
+
+<h2>解释执行</h2>
+
+<p>从代码来分析,如果外层循环较大,则内层循环的循环变量会被更多次的使用,这是个隐性的开销,而内层循环里的代码,在两种情况下执行指令的次数是一致的,所以外层循环较大则性能较差.</p>
+
+<h2>JIT</h2>
+
+<p>通常循环达到一定的次数回边计数超过阀值,则出发JIT编译,而后上述基于栈的指令体系下出现的指令数差异则不复存在了,而需要看编译后的差异,这个差异在不同的机器上表现有些不一样,即使是同样的环境,而会略有不同,但用perf分析后,发现执行的指令数,耗时,分支预测错误率,线程cpu迁移都没有数量级的差异.可以说性能基本一致.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[字节序与java]]></title>
