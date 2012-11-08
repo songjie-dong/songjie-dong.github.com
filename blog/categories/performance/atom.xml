@@ -4,7 +4,7 @@
   <title><![CDATA[Category: performance | All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/blog/categories/performance/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-11-08T12:19:35+08:00</updated>
+  <updated>2012-11-08T12:22:12+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -28,7 +28,7 @@
 
 <h2>JIT</h2>
 
-<p>通常循环达到一定的次数回边计数超过阀值,则出发JIT编译,而后上述基于栈的指令体系下出现的指令数差异则不复存在了,而需要看编译后的差异,这个差异在不同的机器上表现有些不一样,即使是同样的环境,而会略有不同,但用perf分析后,发现执行的指令数,耗时,分支预测错误率,线程cpu迁移都没有数量级的差异.可以说性能基本一致.</p>
+<p>通常循环达到一定的次数回边计数超过阀值,则触发JIT编译,而后上述基于栈的指令体系下出现的指令数差异则不复存在了,而需要看编译后的差异,这个差异在不同的机器上表现有些不一样,即使是同样的环境,而会略有不同,但用perf分析后,发现执行的指令数,耗时,分支预测错误率,线程cpu迁移都没有数量级的差异.可以说性能基本一致.</p>
 ]]></content>
   </entry>
   
