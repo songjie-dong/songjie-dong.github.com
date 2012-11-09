@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: branch predictor | All Things Coding]]></title>
+  <link href="http://songjie-dong.github.com/blog/categories/branch-predictor/atom.xml" rel="self"/>
+  <link href="http://songjie-dong.github.com/"/>
+  <updated>2012-11-09T15:46:44+08:00</updated>
+  <id>http://songjie-dong.github.com/</id>
+  <author>
+    <name><![CDATA[Songjie Dong]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[分支预测的迷思]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing/"/>
+    <updated>2012-11-08T18:29:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing</id>
+    <content type="html"><![CDATA[<h2>What</h2>
+
+<p>首先,看看什么是分支预测,这个技术的出现是由于CPU技术的进步,现代CPU都采用了流水线结构,而且流水线越深,利用率越高,则性能越高,但流水线引入了一个问题,就是需要预先将指令取出并reordering再放入流水线,而程序中的分支则导致无法预取指令,必须等到evaluate条件指令之后才能确定,这会导致流水线无法充分利用.本文介绍一些基本的关于分支预测的概念和实现方式,具体的概念和资料请参考<a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></p>
+
+<p>intel官方数据分支预测器能保证在工业测试中达到94%+的成功率,但这就像intel官方宣布的MIPS一样不靠谱,实际的情况有时会不如人意,分支预测成功率低会导致流水线需要重新取指并reordering,大约开销在20 clock cycle以内(数据各有差异,但我没看到20以上的),通常在5%以上就值得关注,10%以上就难以忍受了.</p>
+
+<h2>分支预测的主流技术</h2>
+
+<p>分支预测需要做两件事:
+1. 预测branch可能的方向
+2. 从BTB中找到对应的PC地址,取指并reording(实际情况步骤会更多)</p>
+
+<p>BTB可以理解为一个hashmap,里面保存了某branch对应方向对应的需执行指令地址,BTB大小有限.</p>
+
+<p>预测算法:</p>
+
+<ol>
+<li><p>饱和计数
+使用两个bit保存具备4种状态的状态机,状态机具有强不选择,弱不选择,弱选择,强选择,说简单点就是只有两次选择到同样的分支,状态机才会选择改变分支方向,早期的奔腾系列使用了这种方法,测试结果达到93.5%的准确率,但我们很容易就可以发现它的弱点.</p></li>
+<li><p>两级自适应预测器
+记录n次branch history的结果作为一个当前模式,同时存在一个pattern history table,这里面记录了n个长度模式和n个对应的饱和计数器.简而言之这是一个基于模式识别,具备很强的预测模式能力的预测器.
+通常来说,每个分支都需要一个独立的pattern history table,称之为本地分支预测,但考虑到对于m条分支预测指令,n次长度的历史模式来说,需要消耗的内存极大,所以有了全局分支预测,它提供了共享的pattern history table,好处是如果多条分支预测相同,则可以共享预测的效果,但如果多条分支只在部分情况下共享分支结果则适得其反.本地分支预测达到了97.1%的准确率,全局分支预测则为96.6%,当然我们需要费点力气才能发现它们的弱点.</p></li>
+<li><p>静态预测
+总是用一种方向来预测.编译器可以提供hint给cpu,适用类似if (xxx == null)的场景.</p></li>
+<li><p>循环分支预测
+对于现代cpu都会对loop的跳出条件做特殊优化,他会记录条件值和当前循环次数,当达到退出条件时直接预测跳出,这个计数值不会无限大,intel官方数据是16,也有说64的.</p></li>
+<li><p>融合分支预测
+本地和全局预测组合.</p></li>
+</ol>
+
+
+<h2>案例&amp;分析</h2>
+
+<p>以下列举一些在intel core 2上的测试用例,用例只涉及到对某些具体模式的分支情况做讨论,不涉及实际应用中的复杂模式以及资源竞争的影响,同时结论也不一定适用于其他类型的CPU,这么做的原因在于:对分支预测来说,难以给出统一的结论性原则,但我们需要考虑如何识别潜在分支预测失败因子以及更重要的避免不必要的预测,或者消除它们.</p>
+
+<p>数据采集使用perf这个linux下的系统性能调优工具,我们用该工具来获取分支预测数据,<a href="http://www.ibm.com/developerworks/cn/linux/l-cn-perf1/index.html">介绍</a>,vtune是intel官方的分析工具,有空可以装来玩玩.</p>
+
+<p>单表达式随机化:
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>single condition  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="n">Random</span> <span class="n">random</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Random</span><span class="o">(</span><span class="n">seed</span><span class="o">);</span>
+</span><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">64</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">random</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+这是一个最为简单,貌似看起来也很具有破坏性的例子,但是intel是强大的,根据一些分析,intel使用了多种预测器的组合,同时具备很强的自适应性,so结果很惊人:
+branch-misses 2%-3% of all branches</p>
+
+<p>结果基本在3%以内,也就是97%的准确率,由于intel对于分支预测并未公开过细节,所以不做过多讨论.</p>
+
+<p>增加一个判断条件:
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>multi-condition  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="n">Random</span> <span class="n">random</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Random</span><span class="o">(</span><span class="n">seed</span><span class="o">);</span>
+</span><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">64</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">random</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">random</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>结果:
+branch-misses 8%-12% of all branches</p>
+
+<p>注意我的这个case,if判断内两个表达式都完全随机,两者毫无关联,此时miss率上升到8%-9%,随着我不断在if中加入随机性的表达式,miss率逐步提到12%左右.</p>
+
+<p>失败模式:单if多随机表达式的杀伤力很强,消除方法可以考虑合并二者,比如上面的例子可以将表达式相加判断是否大于1,复杂情况考虑各种淫荡的位操作.</p>
+
+<p>还有一种方式适用于表达式与loop无关的场景,可以将if外提,从而消除分支预测(编译优化).预测即使miss率很低也会消耗很多资源,而影响到其他的branch.</p>
+
+<p>多条件分支:
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>if-else-condition  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="n">Random</span> <span class="n">random</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Random</span><span class="o">(</span><span class="n">seed</span><span class="o">);</span>
+</span><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">64</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">random</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">8</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">random</span><span class="o">.</span><span class="na">nextInt</span><span class="o">(</span><span class="mi">8</span><span class="o">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something    ... next else if </span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//do something</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+这种场景同样会带来5-8%左右的miss率,这个case中参数完全随机,现实中不太会出现这样的情况,这种模式在部分情况下可以用mapping的方式去消除.</p>
+
+<p>循环退出条件的优化-循环展开:
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>before loop-unrolling  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">65</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">a</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span> <span class="o">=</span> <span class="n">j</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>after loop-unrolling  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">65</span><span class="o">;</span> <span class="n">j</span><span class="o">+=</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">a</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span> <span class="o">=</span> <span class="n">j</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">a</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+将循环表达式中innerloop的循环次数降到64(需要考虑CPU的实现)以下,则可以使用CPU的循环分支预测器.
+这种方式如果两层循环,且外循环很大的情况下容易出现问题.展开的坏处是代码量增加,好处是分支预测效率高,占用资源少,同时指令可以充分利用流水线和并行.由于在我的机器上对于这种场景难以复现,我就没提供测试数据对比.但loop-unrolling是分支预测典型的优化方式之一.</p>
+
+<p>最后这个场景代码逻辑是在一个大的int二维数组中按随机顺序造了一些测试的奇偶数序列,然后在循环的条件分支中判断奇偶数,一共有10个case,它们的长度分别是2,2+1,4,4+1,8,8+1,16,16+1,32,32+1,另外测试条件是多表达式.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>branch predictor test  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="n">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">args</span><span class="o">[</span><span class="mi">0</span><span class="o">]);</span>
+</span><span class='line'>    <span class="kt">int</span><span class="o">[][]</span> <span class="n">randoms</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[][]</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">},</span>
+</span><span class='line'>            <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span><span class="mi">2</span><span class="o">,</span><span class="mi">1</span><span class="o">},</span>
+</span><span class='line'>    <span class="o">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;branch predictor sequence length:&quot;</span> <span class="o">+</span> <span class="n">randoms</span><span class="o">[</span><span class="n">y</span><span class="o">].</span><span class="na">length</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">1000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">100000</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">randoms</span><span class="o">[</span><span class="n">y</span><span class="o">][</span><span class="n">j</span><span class="o">%</span><span class="n">randoms</span><span class="o">[</span><span class="n">y</span><span class="o">].</span><span class="na">length</span><span class="o">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">randoms</span><span class="o">[</span><span class="n">y</span><span class="o">][</span><span class="n">i</span><span class="o">%</span><span class="n">randoms</span><span class="o">[</span><span class="n">y</span><span class="o">].</span><span class="na">length</span><span class="o">]</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">x</span> <span class="o">=</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">x</span> <span class="o">=</span> <span class="n">j</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">x</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>测试脚本:
+<div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>  <span class="k">for </span>i in <span class="o">{</span>0..9<span class="o">}</span>
+</span><span class='line'>  <span class="k">do</span>&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;pre&gt;&lt;code&gt;  <span class="nb">echo</span> -e <span class="s2">&quot;test case:$i\n&quot;</span>
+</span><span class='line'>  perf stat java GGG <span class="nv">$i</span>
+</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;  <span class="k">done</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>result </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+<span class='line-number'>222</span>
+<span class='line-number'>223</span>
+<span class='line-number'>224</span>
+<span class='line-number'>225</span>
+<span class='line-number'>226</span>
+<span class='line-number'>227</span>
+<span class='line-number'>228</span>
+<span class='line-number'>229</span>
+<span class='line-number'>230</span>
+<span class='line-number'>231</span>
+<span class='line-number'>232</span>
+<span class='line-number'>233</span>
+<span class='line-number'>234</span>
+<span class='line-number'>235</span>
+<span class='line-number'>236</span>
+<span class='line-number'>237</span>
+<span class='line-number'>238</span>
+<span class='line-number'>239</span>
+<span class='line-number'>240</span>
+<span class='line-number'>241</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>test case:0&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:2
+</span><span class='line'>99999&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 0':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    435.919199 task-clock                #    1.028 CPUs utilized          
+</span><span class='line'>           135 context-switches          #    0.000 M/sec                  
+</span><span class='line'>            37 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,203 page-faults               #    0.010 M/sec                  
+</span><span class='line'> 1,278,164,688 cycles                    #    2.932 GHz                     [51.00%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,649,473,158 instructions              #    1.29  insns per cycle         [76.19%]
+</span><span class='line'>   454,492,126 branches                  # 1042.606 M/sec                   [74.86%]
+</span><span class='line'>     1,593,299 branch-misses             #    0.35% of all branches         [74.27%]
+</span><span class='line'>
+</span><span class='line'>   0.424036750 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:1&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:3
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 1':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    440.982464 task-clock                #    1.017 CPUs utilized          
+</span><span class='line'>           134 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             7 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,202 page-faults               #    0.010 M/sec                  
+</span><span class='line'> 1,313,300,847 cycles                    #    2.978 GHz                     [48.14%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,691,221,085 instructions              #    1.29  insns per cycle         [74.32%]
+</span><span class='line'>   464,577,389 branches                  # 1053.505 M/sec                   [76.70%]
+</span><span class='line'>     1,860,782 branch-misses             #    0.40% of all branches         [75.40%]
+</span><span class='line'>
+</span><span class='line'>   0.433542282 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:2&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:4
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 2':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    404.754545 task-clock                #    0.998 CPUs utilized          
+</span><span class='line'>           134 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             0 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,201 page-faults               #    0.010 M/sec                  
+</span><span class='line'> 1,205,179,492 cycles                    #    2.978 GHz                     [49.49%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,458,990,354 instructions              #    1.21  insns per cycle         [75.24%]
+</span><span class='line'>   376,194,631 branches                  #  929.439 M/sec                   [75.31%]
+</span><span class='line'>     1,333,624 branch-misses             #    0.35% of all branches         [75.46%]
+</span><span class='line'>
+</span><span class='line'>   0.405460356 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:3&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:5
+</span><span class='line'>99999&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 3':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    672.566849 task-clock                #    0.998 CPUs utilized          
+</span><span class='line'>           169 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             0 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,202 page-faults               #    0.006 M/sec                  
+</span><span class='line'> 2,008,298,057 cycles                    #    2.986 GHz                     [49.48%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,525,468,338 instructions              #    0.76  insns per cycle         [75.04%]
+</span><span class='line'>   407,631,191 branches                  #  606.083 M/sec                   [75.57%]
+</span><span class='line'>    23,903,519 branch-misses             #    5.86% of all branches         [75.13%]
+</span><span class='line'>
+</span><span class='line'>   0.673644531 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:4&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:8
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 4':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    405.341190 task-clock                #    0.998 CPUs utilized          
+</span><span class='line'>           129 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             0 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,204 page-faults               #    0.010 M/sec                  
+</span><span class='line'> 1,207,034,902 cycles                    #    2.978 GHz                     [47.61%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,464,313,449 instructions              #    1.21  insns per cycle         [73.32%]
+</span><span class='line'>   373,966,105 branches                  #  922.596 M/sec                   [76.32%]
+</span><span class='line'>     1,419,666 branch-misses             #    0.38% of all branches         [76.29%]
+</span><span class='line'>
+</span><span class='line'>   0.406078318 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:5&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:9
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 5':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    794.795883 task-clock                #    0.998 CPUs utilized          
+</span><span class='line'>           190 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             0 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,203 page-faults               #    0.005 M/sec                  
+</span><span class='line'> 2,373,644,196 cycles                    #    2.986 GHz                     [49.22%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,516,162,160 instructions              #    0.64  insns per cycle         [74.37%]
+</span><span class='line'>   402,595,975 branches                  #  506.540 M/sec                   [75.37%]
+</span><span class='line'>    36,324,079 branch-misses             #    9.02% of all branches         [75.57%]
+</span><span class='line'>
+</span><span class='line'>   0.796235469 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:6&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:16
+</span><span class='line'>99999&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 6':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    408.163870 task-clock                #    0.998 CPUs utilized          
+</span><span class='line'>           136 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             0 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,202 page-faults               #    0.010 M/sec                  
+</span><span class='line'> 1,214,173,766 cycles                    #    2.975 GHz                     [49.83%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,533,685,373 instructions              #    1.26  insns per cycle         [75.45%]
+</span><span class='line'>   412,685,366 branches                  # 1011.078 M/sec                   [75.54%]
+</span><span class='line'>     1,366,491 branch-misses             #    0.33% of all branches         [74.87%]
+</span><span class='line'>
+</span><span class='line'>   0.408941737 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:7&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:17
+</span><span class='line'>99999&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 7':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    837.196938 task-clock                #    0.999 CPUs utilized          
+</span><span class='line'>           165 context-switches          #    0.000 M/sec                  
+</span><span class='line'>             8 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,202 page-faults               #    0.005 M/sec                  
+</span><span class='line'> 2,497,386,962 cycles                    #    2.983 GHz                     [49.25%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,514,795,880 instructions              #    0.61  insns per cycle         [75.21%]
+</span><span class='line'>   401,526,259 branches                  #  479.608 M/sec                   [75.18%]
+</span><span class='line'>    39,563,587 branch-misses             #    9.85% of all branches         [75.67%]
+</span><span class='line'>
+</span><span class='line'>   0.838282370 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:8&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:32
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 8':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    747.169398 task-clock                #    1.006 CPUs utilized          
+</span><span class='line'>           178 context-switches          #    0.000 M/sec                  
+</span><span class='line'>            51 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,199 page-faults               #    0.006 M/sec                  
+</span><span class='line'> 2,231,730,222 cycles                    #    2.987 GHz                     [50.33%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,630,954,802 instructions              #    0.73  insns per cycle         [75.53%]
+</span><span class='line'>   438,123,215 branches                  #  586.377 M/sec                   [74.94%]
+</span><span class='line'>    30,522,725 branch-misses             #    6.97% of all branches         [74.87%]
+</span><span class='line'>
+</span><span class='line'>   0.742440916 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>test case:9&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>branch predictor sequence length:33
+</span><span class='line'>100000&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p> Performance counter stats for 'java GGG 9':&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>    970.124951 task-clock                #    1.006 CPUs utilized          
+</span><span class='line'>           197 context-switches          #    0.000 M/sec                  
+</span><span class='line'>            51 CPU-migrations            #    0.000 M/sec                  
+</span><span class='line'>         4,202 page-faults               #    0.004 M/sec                  
+</span><span class='line'> 2,897,829,158 cycles                    #    2.987 GHz                     [49.89%]
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>   &lt;not supported> stalled-cycles-frontend
+</span><span class='line'>   &lt;not supported> stalled-cycles-backend&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code> 1,615,586,420 instructions              #    0.56  insns per cycle         [75.29%]
+</span><span class='line'>   432,153,910 branches                  #  445.462 M/sec                   [74.86%]
+</span><span class='line'>    51,106,599 branch-misses             #   11.83% of all branches         [75.29%]
+</span><span class='line'>
+</span><span class='line'>   0.964319417 seconds time elapsed
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p></span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>以上测试不严谨的地方在于没有多次测试并取平均值,但经过人肉的repeat和肉眼的分析来看,测试数据表现出的特征很明显,所有测试序列长度大于2的结果中,为2的幂次+1的结果都在分支预测上表现不理想,同时当序列长度等于32时,结果要明显高于小于等于16的2的幂次的结果.</p>
+
+<p>这个场景很特别,也有很多值得思考的问题,目前没有很明确的答案,只有一些基本的猜测:</p>
+
+<ol>
+<li><p>仔细看看,发现if条件中的第二个表达式在内循环中由于i的不变性而保持不变,第一个条件虽然会发生变化,但其值具备很强的可预测性,因为在去掉第二个条件后,miss率降到3%左右.而将第二个表达式前提后,miss率也降低到3%.
+这个现象十分之诡异,也难以解释,准备试试vtune,看能否采集到更精准的数据来分析.</p></li>
+<li><p>计算机喜欢2的幂次</p>
+
+<ul>
+<li>刚毕业那会某大牛对我说,如果你要使用一个数字变量,尽量定义为2的幂次.当然长度16以后的性能剧降能间接的说明了解branch history长度的意义.</li>
+<li>2的幂次+1带来的更多的随机性和资源的负担,我只能说记住第一条,但无法量化分析这个现象,如果真要分析,有机会进intel我会好好研究~.</li>
+</ul>
+</li>
+</ol>
+
+
+<h2>结论</h2>
+
+<ol>
+<li>2的幂次</li>
+<li>优化hotspot,尽量消除不必要的分支,如果必须要使用,注意分析branch内表达式的随机性.</li>
+<li>分析分支预测失败因子基于了解当前CPU内部架构的基础上.</li>
+</ol>
+
+
+<h2>参考</h2>
+
+<ul>
+<li><a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></li>
+<li><a href="http://software.intel.com/en-us/articles/avoiding-the-cost-of-branch-misprediction">intel开发者blog-如何避免分支预测失败的开销</a></li>
+<li><a href="http://www.docin.com/p-86138919.html">某教授对各种类似CPU内部架构的分析和猜测, 专业!</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Loop_unwinding">loop unrolling</a></li>
+<li><a href="http://www.cs.cmu.edu/afs/cs/academic/class/15740-f02/public/doc/discussions/uniprocessors/branch_pred/msmith_isca95.pdf">分支预测分析</a></li>
+</ul>
+
+
+<p>intel官方文档我没有找到对于分支预测的详细介绍,很多地方都是一笔带过.这里就不列举了.</p>
+]]></content>
+  </entry>
+  
+</feed>
