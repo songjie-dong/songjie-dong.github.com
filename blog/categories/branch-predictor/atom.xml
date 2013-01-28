@@ -4,7 +4,7 @@
   <title><![CDATA[Category: branch predictor | All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/blog/categories/branch-predictor/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-11-09T15:46:44+08:00</updated>
+  <updated>2013-01-28T22:49:43+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -20,7 +20,7 @@
     <id>http://songjie-dong.github.com/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing</id>
     <content type="html"><![CDATA[<h2>What</h2>
 
-<p>首先,看看什么是分支预测,这个技术的出现是由于CPU技术的进步,现代CPU都采用了流水线结构,而且流水线越深,利用率越高,则性能越高,但流水线引入了一个问题,就是需要预先将指令取出并reordering再放入流水线,而程序中的分支则导致无法预取指令,必须等到evaluate条件指令之后才能确定,这会导致流水线无法充分利用.本文介绍一些基本的关于分支预测的概念和实现方式,具体的概念和资料请参考<a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></p>
+<p>首先,看看什么是分支预测,这个技术的出现是由于CPU技术的进步,现代CPU都采用了流水线结构,而且流水线越深(按深入理解计算机提到的是15),利用率越高,但流水线引入了一个问题,就是需要预先将指令取出并reordering再放入流水线,而程序中的分支则导致无法预取指令,必须等到evaluate条件指令之后才能确定,这会导致流水线无法充分利用.本文介绍一些基本的关于分支预测的概念和实现方式,具体的概念和资料请参考<a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></p>
 
 <p>intel官方数据分支预测器能保证在工业测试中达到94%+的成功率,但这就像intel官方宣布的MIPS一样不靠谱,实际的情况有时会不如人意,分支预测成功率低会导致流水线需要重新取指并reordering,大约开销在20 clock cycle以内(数据各有差异,但我没看到20以上的),通常在5%以上就值得关注,10%以上就难以忍受了.</p>
 

@@ -4,7 +4,7 @@
   <title><![CDATA[All Things Coding]]></title>
   <link href="http://songjie-dong.github.com/atom.xml" rel="self"/>
   <link href="http://songjie-dong.github.com/"/>
-  <updated>2012-11-09T15:46:44+08:00</updated>
+  <updated>2013-01-28T22:49:43+08:00</updated>
   <id>http://songjie-dong.github.com/</id>
   <author>
     <name><![CDATA[Songjie Dong]]></name>
@@ -14,13 +14,63 @@
 
   
   <entry>
+    <title type="html"><![CDATA[爷爷的两三事]]></title>
+    <link href="http://songjie-dong.github.com/blog/2013/01/28/ye-ye-de-liang-san-shi/"/>
+    <updated>2013-01-28T21:40:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2013/01/28/ye-ye-de-liang-san-shi</id>
+    <content type="html"><![CDATA[<p>两周前到西湖苏堤去看夕阳,顺便游览了一番,游玩时想到爷爷,他是浙江人,也因为他以前在世时的两三事,途中偶尔会天真的幻想爷爷还在世我们讨论的话题会是&#8230;..</p>
+
+<p>说起爷爷,小时候经常翻阅爷爷的藏书,都是繁体书,印象中较为深刻的是爷爷买的书都会在第一页写上江贤端购于xx地,年月日的字样,本本如此,如今这个遍地物质精神快餐的时代,谁还会有如此雅兴.至于哪些书已经完全记不得,只是在爷爷去世时,我保留了一本繁体版的史记,纸质早已发黄,此书我只看过与刺客列传相关的内容,惭愧,惭愧.</p>
+
+<p>爷爷让我印象深刻的地方还有他70岁了还在学习英语,而且方式就是听广播,那时我刚刚上初中开始学习英语,印象中爷爷最喜欢与我讨论英语知识,有时教的不对还会特意走到我家来纠正之前的错误,怪我少不更事,如今想来,爷爷这样的人在现代社会实在是太少了,我们这代80后到了70岁坚持学习的人能有多少?</p>
+
+<p>爷爷还会很有雅兴的养养金鱼,种种盆景啥的,盆景不大,白天有空的时候我偶尔会跟着爷爷在阳台发呆,虽不太懂得欣赏盆景,但很好奇这种植物为啥值得天天看,还得修剪.</p>
+
+<p>至于爷爷对我的偏爱,爷爷毫不掩饰,周末都会带我到公园去玩,蹦床一玩就是一个下午,一个6,70岁的老人就这么陪着我度过了无数个这样的下午,有一次玩到没钱了,爷爷还去找公园里不认识的人借钱,哎,被我逼到这份上了.</p>
+
+<p>大学时去杭州玩,特意要求去浙大拍了张照,我不是喜欢拍照的人,但是我想去看看爷爷读过书的地方,从而能在内心根据这些积攒下来的记忆拼凑爷爷在我心中的印象.我觉得爷爷是那个时代的知识分子,毕竟那时候能读大学的人并不多,何况是浙大.</p>
+
+<p>爷爷走的很辛苦,多年的支气管炎,一到武汉的冬天就必须得住院,那时家里都不富裕,最后爷爷也不愿意去医院了,就在那年走了,爷爷其实有个妹妹,家里还算富足,想来爷爷也是做好了打算,并无留恋之意才执意不去医院的.</p>
+
+<p>哎,如果能再和您说上一次话,我想我会少走很多弯路,如果能再吃上您炒的油盐饭,鱼香肉丝,风干羊腿火锅,我一定会感动的痛哭流涕,如果能再与您讨论英语学习,我想我也不会痛恨这门课程,如果您还在,或许我们可以一起痛骂世道不古,把老一代知识分子的精神全都丢了的时代,又或许与您一起畅游西湖,回忆您的往事,我想一定会很精彩.</p>
+
+<p>一直都是眼含泪水的写到这里,因为很遗憾我当时的少不更事,碌碌无为.遗憾是生命中最残忍的事情,希望您能在天上好好的看着我,看着我的成长,并非是我现在有多么好,而是我会尽一生接近您想要的人间正道.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Is parallel programming hard? - 2 ]]></title>
+    <link href="http://songjie-dong.github.com/blog/2012/11/15/is-parallel-programming-hard-2/"/>
+    <updated>2012-11-15T14:39:00+08:00</updated>
+    <id>http://songjie-dong.github.com/blog/2012/11/15/is-parallel-programming-hard-2</id>
+    <content type="html"><![CDATA[<h2>问题</h2>
+
+<p>CAS是否是绝对的灵丹妙药呢?</p>
+
+<h2>测试</h2>
+
+<p>根据并发编程实践中的结论,极端的竞争条件下,Lock表现出比CAS更好的性能,在中等的竞争条件下,CAS明显胜出.</p>
+
+<h2>Is parallel programming hard 书中关于CAS过程的分析</h2>
+
+<p>对于一次CAS操作,如果是最好的情况:当前处理的core的l1 cache line 命中,则直接操作,如果miss,则会通过Interconnect通讯其他core,寻找CAS操作的数据,core间传输数据的开销不低,在4-CPU 1.8GHz AMD Opteron 844 System上,整个miss的CAS操作需要500个clock cycle.而命中的情况下只需要63个clock cycle.</p>
+
+<p>另外java里实现的CAS都有一定数量的spin操作,如果大量的竞争失败,对于CPU来说则是做了很多无用功.</p>
+
+<h2>结论</h2>
+
+<p>吞吐量的测试结果是在高并发的情况下:CAS的miss开销+CPU无用功 > Lock的开销(context switch, cache miss).</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[分支预测的迷思]]></title>
     <link href="http://songjie-dong.github.com/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing/"/>
     <updated>2012-11-08T18:29:00+08:00</updated>
     <id>http://songjie-dong.github.com/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing</id>
     <content type="html"><![CDATA[<h2>What</h2>
 
-<p>首先,看看什么是分支预测,这个技术的出现是由于CPU技术的进步,现代CPU都采用了流水线结构,而且流水线越深,利用率越高,则性能越高,但流水线引入了一个问题,就是需要预先将指令取出并reordering再放入流水线,而程序中的分支则导致无法预取指令,必须等到evaluate条件指令之后才能确定,这会导致流水线无法充分利用.本文介绍一些基本的关于分支预测的概念和实现方式,具体的概念和资料请参考<a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></p>
+<p>首先,看看什么是分支预测,这个技术的出现是由于CPU技术的进步,现代CPU都采用了流水线结构,而且流水线越深(按深入理解计算机提到的是15),利用率越高,但流水线引入了一个问题,就是需要预先将指令取出并reordering再放入流水线,而程序中的分支则导致无法预取指令,必须等到evaluate条件指令之后才能确定,这会导致流水线无法充分利用.本文介绍一些基本的关于分支预测的概念和实现方式,具体的概念和资料请参考<a href="http://zh.wikipedia.org/zh/%E5%88%86%E6%94%AF%E9%A0%90%E6%B8%AC%E5%99%A8">分支预测器</a></p>
 
 <p>intel官方数据分支预测器能保证在工业测试中达到94%+的成功率,但这就像intel官方宣布的MIPS一样不靠谱,实际的情况有时会不如人意,分支预测成功率低会导致流水线需要重新取指并reordering,大约开销在20 clock cycle以内(数据各有差异,但我没看到20以上的),通常在5%以上就值得关注,10%以上就难以忍受了.</p>
 
@@ -1689,130 +1739,6 @@ Generally speaking, avoid creating short-term temporary objects if you can. Fewe
 <li> <a href="http://book.douban.com/subject/3054821/">渴望生活</a></li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Thinking in git]]></title>
-    <link href="http://songjie-dong.github.com/blog/2012/08/15/thinking-in-git/"/>
-    <updated>2012-08-15T23:57:00+08:00</updated>
-    <id>http://songjie-dong.github.com/blog/2012/08/15/thinking-in-git</id>
-    <content type="html"><![CDATA[<h1>前言</h1>
-
-<p>最近工作中用到git,本着遇到什么学什么的精神,最近看了看git相关的资料和一些blog,将一些学习方法和结论总结一下.</p>
-
-<h3>头疼的命令</h3>
-
-<p>在初次使用git时,我感觉这东西是个不太易用的东东,概念复杂,命令复杂(这还是被封装过的,用底层命令完全得理解整个系统的来龙去脉才有可能).</p>
-
-<p>很多blog会介绍一些fast food,比如本地仓库和远程仓库diff,然后贴个命令上去&#8230;.有些时候命令未必靠谱(原因是git命令复杂,贴出来的命令未必真适应你的场景),最后搞的我只有祭出GUI来完成日常工作,实在是悲催.</p>
-
-<h4>方法 双管齐下!</h4>
-
-<p>工作中的常用命令通过查blog,man doc学习,工作时不拘泥于命令的复杂使用,而是快速学会常用命令,了解基本概念(个人觉得git社区版介绍不错<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFcQFjAB&amp;url=http%3A%2F%2Fgitbook.liuhui998.com%2F&amp;ei=SsorUIvVFoyRiQel4YDoDA&amp;usg=AFQjCNHVw05olZNWF6IDNhFykqVQNkN5wg">git社区版</a>,git pro入门看感觉一般).</p>
-
-<p>对于git这么久经考验的开源系统而言,不了解底层原理,和其他vcs产品的异同,设计的理念,发展过程,产品现状等等,那就算是白用了,而且芥末优秀的产品对于学习产品架构设计很有借鉴意义,对于此我个人推荐<a href="http://www.google.com.hk/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=2&amp;ved=0CFoQFjAB&amp;url=http%3A%2F%2Fishare.iask.sina.com.cn%2Ff%2F23222298.html&amp;ei=WMsrULvDB6aciAevuoCgDg&amp;usg=AFQjCNGecM96Vuaa7rQGtyyGzlLNvk3hYw">The Architecture of Open Source Applications volume II</a></p>
-
-<hr />
-
-<p>先写到这,后续补充</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hello]]></title>
-    <link href="http://songjie-dong.github.com/blog/2012/08/12/hello/"/>
-    <updated>2012-08-12T09:51:00+08:00</updated>
-    <id>http://songjie-dong.github.com/blog/2012/08/12/hello</id>
-    <content type="html"><![CDATA[<p>介于微博的极度不河蟹,改为上推,看到某人的blog发现自己out了,现在都用github搭blog了,于是我就折腾了一个,安了个新家,以下内容完全是对markdown语法的练习</p>
-
-<p>折腾了半天遇到个编码问题,不知道为啥ruby默认用了GBK,搞了半天发现term设置的GBK,而我一般用iterm&#8230;忘了这个点啊&#8230;..</p>
-
-<p>编码</p>
-
-<hr />
-
-<p>&copy;</p>
-
-<p>AT&amp;T</p>
-
-<p>标题</p>
-
-<hr />
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h3>this is title 3</h3>
-
-<h4>this is title 4</h4>
-
-<h5>this is title 5</h5>
-
-<h6>this is title 6</h6>
-
-<p>缩进</p>
-
-<hr />
-
-<blockquote><p>this is a blockquote</p>
-
-<blockquote><p>test</p></blockquote>
-
-<p>this is a blockquote
-with lazy mode</p></blockquote>
-
-<p>列表</p>
-
-<hr />
-
-<ul>
-<li> test</li>
-<li> test</li>
-<li><p> test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>1</p></li>
-<li>2</li>
-<li><p>3</p></li>
-<li><p>so funny beginning</p></li>
-</ul>
-
-
-<p>1986. you can escape it</p>
-
-<hr />
-
-<pre><code>print "hello world!"
-</code></pre>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">print</span> <span class="s">&quot;hello world!&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>horizontal rules</h2>
-
-<hr />
-
-<hr />
-
-<hr />
-
-<h2>link</h2>
-
-<p><a href="http://dongsongjie.cn" title="Songjie Dong's homepage">I&#8217;m a link</a></p>
-
-<h2>强调</h2>
 ]]></content>
   </entry>
   

@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="初次见面 初学OO是在学习Java时,当时感觉OO像是巴别塔,迷恋的人觉得无比的向往,于是猛啃侯捷版的Thinking in java中那几章继承多态啥的,不知道看过多少遍,而后看设计模式(不夸张,期间还有coding例子加冥想体会),当时自我感觉略懂,能用,但写起代码还是有些手足无措. &hellip;">
+  <meta name="description" content="最近看了钱老说的一句话:一个人,到了20岁还不狂，这个人是没出息的；到了30岁还狂，也是没出息的。 以此句开头颇有意味,20岁的时候我还没狂,只是把无处安放的青春献给了网吧,一晃就29岁啦,赶上了20岁狂的那拨人,但还是隐隐感到有危机. 有时候感觉到到有心无力,特别是每当把问题研究到比较深入领域时 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +85,139 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/11/06/ci-shi-ci-ke/">此时此刻</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-06T15:05:00+08:00" pubdate data-updated="true">Nov 6<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/11/06/ci-shi-ci-ke/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近看了钱老说的一句话:一个人,到了20岁还不狂，这个人是没出息的；到了30岁还狂，也是没出息的。</p>
+
+<p>以此句开头颇有意味,20岁的时候我还没狂,只是把无处安放的青春献给了网吧,一晃就29岁啦,赶上了20岁狂的那拨人,但还是隐隐感到有危机.</p>
+
+<p>有时候感觉到到有心无力,特别是每当把问题研究到比较深入领域时,我总是会感觉有某种障碍在阻拦我的前进,于是我在近一两年开始有意识的结构化很多计算机本知识,回归到最原始的途径来学习,如今看来确实小有收获,但知识体系尚未完全建立,很多常识性的知识还有待进一步的积累,但怎奈环境一直不够给力.</p>
+
+<p>如此情况下,我看30岁是不可能狂的,这样也好,应了钱老的后半句句话,否则真没出息怎么办,O(∩_∩)O~,我要从新扬帆起航,虽然知道放弃自己所熟悉的领域,去探索未知的世界,对于这个世俗的世界来说是个极大的风险,但我还是想义无反顾的去尝试让自己有更多的可能性.此时此刻,为了以后的出息而努力吧.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/10/26/is-parallel-programming-hard-1/">Is Parallel Programming Hard? -1</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-26T18:10:00+08:00" pubdate data-updated="true">Oct 26<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/10/26/is-parallel-programming-hard-1/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>迷思</h2>
+
+<p>“Is Parallel Programming Hard, And, If So, What Can You Do About It?”,这本书很久就知道,一直没怎么看过,多半对于并行的理解来自于工作中需要对java处理并行的方式有一定的了解,所以看了不少关于JVM内存模型,线程安全控制,doug lea的并发包处理,深入理解计算机等等相关的书籍,文档和blog,但知识体系不够完整,所以这个系列记录一些阅读本书的笔记</p>
+
+<h2>关于CPU</h2>
+
+<p>作者开篇介绍了有些粗心的人对于CPU的理解就像在没有障碍的赛道上跑步,总能保持较快的速度,但事实上除了一些计算密集型的场景以外,绝大多数的程序相比于竞速赛跑来说更像是越野障碍赛,下面我们就一起看看有哪些障碍.</p>
+
+<h3>流水线</h3>
+
+<p>现代CPU引入了流水线机制,将不同指令放到不同的流水线执行,这意味着在微观世界里,指令执行的顺序很可能与我们看到的不一样,但会保证执行结果的一致性,这就是指令的重排序过程,重排序可以更充分的利用cpu的流水线机制更迅速的执行指令.但重排序机制也引入了一个问题:需要预取指令,这对于在运行时的条件分支预测提出了挑战,如果你在一个频繁执行的循环中加入一个if else,而这个if else的分支路线分布随机,则难以预测,进而导致流水线无法充分利用,降低系统整体性能.</p>
+
+<h3>内存读写</h3>
+
+<p>CPU的性能的提升速度明显高于内存的访问性能,这导致了CPU访问内存逐渐成为了瓶颈,于是高速缓存的命中率对于性能来说至关重要,而类似链表这种结构显然就不是缓存友好的结构,数组则更加适合(空间局部性).对于单核来说高速缓存能很好的解决内存访问的性能瓶颈,对于多核来说则引入了而外的问题.</p>
+
+<h3>atomic&amp;memory barrier</h3>
+
+<p>现代CPU都提供了原子操作的指令,该指令保证了对单个数据操作的原子性和可见性,memory barrier就是用来保证指令的顺序不会由于重排序破坏了原子性.但barrier机制降低了流水线的使用效率,另外atomic操作结束会将数据直接写内存,保证可见性.</p>
+
+<h3>cache misses</h3>
+
+<p>多核的cache各自独立,进而导致了我们需要避免缓存数据在多个核存在的情况,这会导致cpu之间相互传递数据,引入而外的开销(false sharing),作者在后续文章中提到关于数组实现的并发的计数器设计中需要考虑在数组中增加填充物来避免false sharing问题.</p>
+
+<h2>编程</h2>
+
+<p>以单核平均执行指令数来衡量并行的性能,以上述机制来分析,需要关注的点:</p>
+
+<h3>cache misses</h3>
+
+<p>高速缓存的命中率问题,我们要关注context switch的次数,这就需要间接的关注程序中可能的block因素,IO,锁等等都可能block线程导致context switch.
+而context switch后高速缓存需要重新warm-up</p>
+
+<p>过多的线程迁移也会导致类似的问题.</p>
+
+<p>空间局部性,多用数组这种结构,但要注意多核的false sharing问题.</p>
+
+<p>时间局部性</p>
+
+<p>避免不必要的同步和原子操作,有时它们会强制访问内存数据.</p>
+
+<h3>分支预测</h3>
+
+<p>写出分支预测友好的代码,必要情况下可以hard coding或者用mapping来消除if else</p>
+
+<h3>共享</h3>
+
+<p>共享数据总是万恶之源.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -577,106 +710,6 @@ Btree levels: 4
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T11:30:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>短暂的百年阿里之旅，仿佛让我又回到了大学时代，大家一起做游戏，一起感悟人生，一起体会阿里的价值观，也留下了很多难忘的回忆。</p>
-
-<p>在这里我结识了一帮朋友，大家一起在游戏中，在讲师的各种故事中慢慢的体会到什么是客户第一，团队合作，拥抱变化，激情，敬业，诚信。为了小组最后的价值观表演我们连续两天排练到很晚，回家睡觉时都两点了，最后我还献出了人生中第一次的反串（感觉阿里人都好这口），难忘拓展时大家挺着烈日完成了一个个的任务，彼此信任，互相鼓励，我所在的团队还拿到了最后的冠军，我也得到了一枚小太阳虽然这枚小太阳我弄丢了，但是团队中每一个成员都没有因此责怪我。另外对于团队这两个字的我现在有了更深刻的认识，那就是行动前需要周密的计划与决策，一旦决定，团队必须坚决的执行，除非决策者提出新的方案，只有这样才能保证在高标准，高压力的工作中不断的前进。</p>
-
-<p>对于工作三年的我来说，也经历了很多的事，心中的那个杯子早已不再是空的，我有自己的价值观对于各种事情都有自己很主观的看法，我很明确自己的目标。在培训期间我一直在思考，因为在这里，在阿里有些不一样的东西，有些是我早已忘却的宝贵东西，现在我又重新找到了，很庆幸我能够参加这次培训，它给了我很多，很多。。。</p>
-
-<p>David说了一个字，我印象深刻，那就是德字，在目前的中国，乃至放眼全球，有多少企业能做到这个德字，又有多少企业家在慢慢的丢失掉自己的德。百年阿里，这是个伟大的事业，我也愿意与所有的阿里同仁们一起为这个事业添砖加瓦！从现在开始我任然不是空杯，只是杯子里的水不再浑浊。</p>
-
-<hr />
-
-<p>这篇旧文很可爱&#8230;.希望我能永远保持有这样的心境</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/">渐渐离去的战友们</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T11:25:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>5年前，当我们一群同学踌躇满志杀入IT行业，进入了职场打拼，我们都是怀着自己的梦想，希望通过自己的努力证明自己的能力，5年过去了，剩下了几个，又剩下几个还怀着梦想的人，更多的都是在养老或者混日子或者怨天尤人。</p>
-
-<p>刚开始工作那会，我们经常聚会，吃吃喝喝，工作中的苦恼都消散在我们的酒桌上，某某技术基础较差，我们大家会建议他看什么什么书，或者就一些技术实现给予帮助，某某家庭生活有点问题，我们也会想方设法开导他，总之，虽然大家技术都一般，但是对于程序员这个职业我们还是充满了激情。</p>
-
-<p>5年过去，大部分人都远离的原来的理想，有的人虽然还在从事程序员工作但是已经是行尸走肉，抱着干到30换行业的决心在坚持；有的人干着IT相关基层工作，已经不在coding，生活的依然困惑；有的人因为自身性格和综合能力问题，虽然有一定技术基础，但是无法适应环境，三天打渔，两天晒网，干活也只是为了挣点生活费；有的人自认为已经out了，无法跟随IT业飞速发展，被不断出现的新技术所累，慢慢丧失激情；有些人稍微混的好点，但也仅限于待遇，还是无法逃离所谓“中国程序员只能干到30”的魔咒，甚至自己都这么认为；即使有些混的不错了，但是满身都是职业病，对于IT业早已萌生退意。</p>
-
-<p>5年了，这五年我们的聚会，交流越来越少，似乎每个人都有自己的想法，都过的不如意，大家都变得不愿意沟通，喜欢按自己想的来，伴随着中国经济的飞速发展，房价，物价的大涨，大多数人的如意算盘打错了，因为所谓的混若干年经验带来的不错的待遇如今已经无法满足我们的生活需求，IT高薪梦破灭，我们还需要更多的钱，于是我们在去寻找着更好待遇的时候，我们发现，这几年来大家一直都忽视了程序员混饭吃必须的东西：持续的对于技术的激情。我们失去的是我们的干家本领，于是所有的现象都不难解释了：“IT行业我受够了，干的太累了，别人随便做点生意都比我挣的多”，“搞技术太无聊了，如果在我再选一次，打死我也不选这个职业”，“最近检查出了很多职业病，哎，以后不能太拼命了，混着得了”，“技术还不都是那些东西，学起来也没意思”。</p>
-
-<p>每次与战友们聊天我都能感受到大家不想干下去的想法，但是生活就是这样，5年了，你付出了什么，你就能得到什么，想着混经验待遇自然会涨，想着做几年技术就搞管理，想着怎么挣钱而不是怎么学好技术，诸如此类，很多时候我们都是在做错误的事情，哪怕是我们正确的做好了事情，但是本质上路走错了，我们很难再回头了，很伤感，眼看着大家离自己最初的梦想越来越远，生活原来是这么的残酷。</p>
-
-<p>技术这活还是条很艰难的路，但是就像那首诗说的，既然我们选择了少有人走的路，我们就要走出属于自己的精彩，希望战友们以后的工作顺利，家庭幸福，即使大家都已不在IT圈打拼。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -719,11 +752,19 @@ Btree levels: 4
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (4)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (4)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/01/28/ye-ye-de-liang-san-shi/">爷爷的两三事</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/15/is-parallel-programming-hard-2/">Is parallel programming hard? - 2 </a>
+      </li>
     
       <li class="post">
         <a href="/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing/">分支预测的迷思</a>
@@ -735,14 +776,6 @@ Btree levels: 4
     
       <li class="post">
         <a href="/blog/2012/11/07/zi-jie-xu-yu-java/">字节序与java</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/06/ci-shi-ci-ke/">此时此刻</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/26/is-parallel-programming-hard-1/">is parallel programming hard? -1</a>
       </li>
     
   </ul>
@@ -759,7 +792,7 @@ Btree levels: 4
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2012 - Songjie Dong -
+  Copyright &copy; 2013 - Songjie Dong -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> Theme by <a href="http://melandri.net">@alemelandri</a></span>
 </p>
 
