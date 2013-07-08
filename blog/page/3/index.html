@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="前言 若干年前看了Java的四种引用类型，只是简单知道了不同类型的作用，但对其实现原理一直未能想明白，本文尝试结合jdk，openjdk6的部分源码分析弱引用实现的原理，供大家参考，部分技术细节没有仔细研究，如有疑问欢迎留言讨论 实例分析 我们以WeakHashMap的处理过程为例介绍一个weak &hellip;">
+  <meta name="description" content="迷思 “Is Parallel Programming Hard, And, If So, What Can You Do About It?”,这本书很久就知道,一直没怎么看过,多半对于并行的理解来自于工作中需要对java处理并行的方式有一定的了解,所以看了不少关于JVM内存模型,线程安全控制, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +85,173 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/10/26/is-parallel-programming-hard-1/">Is Parallel Programming Hard? -1</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-26T18:10:00+08:00" pubdate data-updated="true">Oct 26<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/10/26/is-parallel-programming-hard-1/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>迷思</h2>
+
+<p>“Is Parallel Programming Hard, And, If So, What Can You Do About It?”,这本书很久就知道,一直没怎么看过,多半对于并行的理解来自于工作中需要对java处理并行的方式有一定的了解,所以看了不少关于JVM内存模型,线程安全控制,doug lea的并发包处理,深入理解计算机等等相关的书籍,文档和blog,但知识体系不够完整,所以这个系列记录一些阅读本书的笔记</p>
+
+<h2>关于CPU</h2>
+
+<p>作者开篇介绍了有些粗心的人对于CPU的理解就像在没有障碍的赛道上跑步,总能保持较快的速度,但事实上除了一些计算密集型的场景以外,绝大多数的程序相比于竞速赛跑来说更像是越野障碍赛,下面我们就一起看看有哪些障碍.</p>
+
+<h3>流水线</h3>
+
+<p>现代CPU引入了流水线机制,将不同指令放到不同的流水线执行,这意味着在微观世界里,指令执行的顺序很可能与我们看到的不一样,但会保证执行结果的一致性,这就是指令的重排序过程,重排序可以更充分的利用cpu的流水线机制更迅速的执行指令.但重排序机制也引入了一个问题:需要预取指令,这对于在运行时的条件分支预测提出了挑战,如果你在一个频繁执行的循环中加入一个if else,而这个if else的分支路线分布随机,则难以预测,进而导致流水线无法充分利用,降低系统整体性能.</p>
+
+<h3>内存读写</h3>
+
+<p>CPU的性能的提升速度明显高于内存的访问性能,这导致了CPU访问内存逐渐成为了瓶颈,于是高速缓存的命中率对于性能来说至关重要,而类似链表这种结构显然就不是缓存友好的结构,数组则更加适合(空间局部性).对于单核来说高速缓存能很好的解决内存访问的性能瓶颈,对于多核来说则引入了而外的问题.</p>
+
+<h3>atomic&amp;memory barrier</h3>
+
+<p>现代CPU都提供了原子操作的指令,该指令保证了对单个数据操作的原子性和可见性,memory barrier就是用来保证指令的顺序不会由于重排序破坏了原子性.但barrier机制降低了流水线的使用效率,另外atomic操作结束会将数据直接写内存,保证可见性.</p>
+
+<h3>cache misses</h3>
+
+<p>多核的cache各自独立,进而导致了我们需要避免缓存数据在多个核存在的情况,这会导致cpu之间相互传递数据,引入而外的开销(false sharing),作者在后续文章中提到关于数组实现的并发的计数器设计中需要考虑在数组中增加填充物来避免false sharing问题.</p>
+
+<h2>编程</h2>
+
+<p>以单核平均执行指令数来衡量并行的性能,以上述机制来分析,需要关注的点:</p>
+
+<h3>cache misses</h3>
+
+<p>高速缓存的命中率问题,我们要关注context switch的次数,这就需要间接的关注程序中可能的block因素,IO,锁等等都可能block线程导致context switch.
+而context switch后高速缓存需要重新warm-up</p>
+
+<p>过多的线程迁移也会导致类似的问题.</p>
+
+<p>空间局部性,多用数组这种结构,但要注意多核的false sharing问题.</p>
+
+<p>时间局部性</p>
+
+<p>避免不必要的同步和原子操作,有时它们会强制访问内存数据.</p>
+
+<h3>分支预测</h3>
+
+<p>写出分支预测友好的代码,必要情况下可以hard coding或者用mapping来消除if else</p>
+
+<h3>共享</h3>
+
+<p>共享数据总是万恶之源.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/">再看面向对象</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-16T15:52:00+08:00" pubdate data-updated="true">Oct 16<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/10/16/zai-kan-mian-xiang-dui-xiang/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>初次见面</h2>
+
+<p>初学OO是在学习Java时,当时感觉OO像是巴别塔,迷恋的人觉得无比的向往,于是猛啃侯捷版的Thinking in java中那几章继承多态啥的,不知道看过多少遍,而后看设计模式(不夸张,期间还有coding例子加冥想体会),当时自我感觉略懂,能用,但写起代码还是有些手足无措.后续又有了很多这方面的书籍,例如:重构-改善既有代码的设计,类似这样的书翻了不少,感觉找到了救世主,最后发现自己严重的教条化,xx代码太长不爽,if太多不爽,没用到模式也不爽,甚至听到每个方法不超过5行这种YY都心潮澎湃.</p>
+
+<h2>我的问题</h2>
+
+<p>OO作为一个时代发展的产物本身没有问题,60年代就出现了OO的概念,后续也出现了一些语言支持,90年代相关理论基本已经完善,等到我学的时候,接触到的都是一些最直接的概念以及大牛们迷恋式的布道,当时的学习方式就是记住相关概念,拜读大牛书籍,然后按模式coding.这样的学习过程带来了极大的问题,因为我把OO看的太形而上,把OO当救世主,认为OO能作为一个可理解性极好的模型来描述世界,殊不知OO并非完美.</p>
+
+<h2>回顾历史</h2>
+
+<p>人们发现当软硬件日益复杂化,代码的维护成本越来越高,需要有一种更加有效和直观的方式来组织不同的代码单元,降低耦合,提高可维护性.60年代OO概念开始出现,后续出现多种支持OOP的语言,相关的概念也逐步形成:动态分派,封装,继承,多态,开放递归等等.对比类似c的以function来组织代码单元的方式,OO则以object作为一等公民,每个object都具备了接收消息,处理数据,发送消息的能力,对象与对象之间通过消息通讯,对象作为系统内部一个独立的&#8221;机器&#8221;,具备独立的状态和能力,用这样的方式,OO同样提供了有效组织代码单元,代码重用,模块化协作的能力.</p>
+
+<h2>问题</h2>
+
+<p>在把OO作为巴别塔的人群中,人们很自然的传播着对于OO的迷恋,但OO并非完美的理论, Bertrand Meyer argues in Object-Oriented Software Construction[21] that a program is not a model of the world but a model of some part of the world,后续也出现了经典的问题,如圆和椭圆的问题.</p>
+
+<p>object作为一等公民,对象成为代码组织方式的核心,进而引入了潜在的易变性问题,而后有人总结并提出面向接口编程,为什么,因为接口才是契约,它无状态,任何的实现必须符合接口提供的规范,同样的输入得到同样的输出,simple and easy,有了这个契约我们才真正的无需关心细节!但我们不能什么都基于接口来编程,我们需要把握某种度,而这种度似乎无法完全掌握,需要case by case.美好的OO编程,其实不像很多迷恋者想的,能够自然且方便的编程,如果没有一些深入的学习,例如了解OO相关的发展过程,概念,优势和劣势等等.我想,用OO写的程序比procedure-oriented更容易出错,而且更容易在程序日益复杂后变得无法维护,难以解耦,可测试性无法与procedure-oriented相比.这显然是有些违背了OO的初衷,同时我们也发现OO其实不是看上去那么易于上手.</p>
+
+<p>同样的输入得到同样的输出(Design By Contract),当我们的程序能够符合某种契约时,很多问题都变得更加的简单化,例如用FP来编程,function作为一等公民,没有易变性,function是比Object更小的单元,可以玩出很多OO中无法玩出的花样,例如闭包,更容易的代码重用,更强的可测试性.所以有很多大牛们推荐学习FP,不是说我们都直接用FP,而是通过对比能更好的看清OO的问题并在日后的coding中借鉴FP的理念.毕竟OO天生就不完美,它与编程的本质似乎存在阻抗不匹配.</p>
+
+<p>OO对于并发的影响大牛们也提到了,这个点我还没明确,现在能想到的是在多核环境下,需要很小心的处理数据的组织形式和读写(缓存抖动,作色,缓存命中率),而OO则天然的决定了数据的组织形式不能从计算机本质的角度出发,后续再分析吧.</p>
+
+<h2>启示</h2>
+
+<ul>
+<li>找个FP语言学学,有很多好处</li>
+<li>应付应试教育的那套学习方法总是无法带来对本质的认知,而只有挖掘本质才能顿悟.</li>
+</ul>
+
+
+<h2>参考</h2>
+
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Object-oriented">OO Wikipedia</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Object-oriented">Design By Contract</a></li>
+<li><a href="http://www.infoq.com/presentations/Are-We-There-Yet-Rich-Hickey">Are We There Yet?</a>
+这篇文章偶会再分析分析,作者level太高,演讲信息量极大,还有些不理解,后续再记录心得.</li>
+<li><a href="http://en.wikipedia.org/wiki/Object-Oriented_Software_Construction">OO software construction</a>
+这本书没有中文版,国内关注的人很少(这个结论来自于<a href="http://book.douban.com/subject/1547078/">豆瓣上的关注度</a>),然而却被广泛的认为是OOP的经典之作,可以作为众多计算机书籍的参考标准,并在1994年获得Jolt大奖,不知道有多少人都在OO的世界里迷茫,看完以上资料或许您就能被救赎.</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -547,135 +714,6 @@ Btree levels: 4
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/">渐渐离去的战友们</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T11:25:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/jian-jian-chi-qu-de-zhan-you-men/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>5年前，当我们一群同学踌躇满志杀入IT行业，进入了职场打拼，我们都是怀着自己的梦想，希望通过自己的努力证明自己的能力，5年过去了，剩下了几个，又剩下几个还怀着梦想的人，更多的都是在养老或者混日子或者怨天尤人。</p>
-
-<p>刚开始工作那会，我们经常聚会，吃吃喝喝，工作中的苦恼都消散在我们的酒桌上，某某技术基础较差，我们大家会建议他看什么什么书，或者就一些技术实现给予帮助，某某家庭生活有点问题，我们也会想方设法开导他，总之，虽然大家技术都一般，但是对于程序员这个职业我们还是充满了激情。</p>
-
-<p>5年过去，大部分人都远离的原来的理想，有的人虽然还在从事程序员工作但是已经是行尸走肉，抱着干到30换行业的决心在坚持；有的人干着IT相关基层工作，已经不在coding，生活的依然困惑；有的人因为自身性格和综合能力问题，虽然有一定技术基础，但是无法适应环境，三天打渔，两天晒网，干活也只是为了挣点生活费；有的人自认为已经out了，无法跟随IT业飞速发展，被不断出现的新技术所累，慢慢丧失激情；有些人稍微混的好点，但也仅限于待遇，还是无法逃离所谓“中国程序员只能干到30”的魔咒，甚至自己都这么认为；即使有些混的不错了，但是满身都是职业病，对于IT业早已萌生退意。</p>
-
-<p>5年了，这五年我们的聚会，交流越来越少，似乎每个人都有自己的想法，都过的不如意，大家都变得不愿意沟通，喜欢按自己想的来，伴随着中国经济的飞速发展，房价，物价的大涨，大多数人的如意算盘打错了，因为所谓的混若干年经验带来的不错的待遇如今已经无法满足我们的生活需求，IT高薪梦破灭，我们还需要更多的钱，于是我们在去寻找着更好待遇的时候，我们发现，这几年来大家一直都忽视了程序员混饭吃必须的东西：持续的对于技术的激情。我们失去的是我们的干家本领，于是所有的现象都不难解释了：“IT行业我受够了，干的太累了，别人随便做点生意都比我挣的多”，“搞技术太无聊了，如果在我再选一次，打死我也不选这个职业”，“最近检查出了很多职业病，哎，以后不能太拼命了，混着得了”，“技术还不都是那些东西，学起来也没意思”。</p>
-
-<p>每次与战友们聊天我都能感受到大家不想干下去的想法，但是生活就是这样，5年了，你付出了什么，你就能得到什么，想着混经验待遇自然会涨，想着做几年技术就搞管理，想着怎么挣钱而不是怎么学好技术，诸如此类，很多时候我们都是在做错误的事情，哪怕是我们正确的做好了事情，但是本质上路走错了，我们很难再回头了，很伤感，眼看着大家离自己最初的梦想越来越远，生活原来是这么的残酷。</p>
-
-<p>技术这活还是条很艰难的路，但是就像那首诗说的，既然我们选择了少有人走的路，我们就要走出属于自己的精彩，希望战友们以后的工作顺利，家庭幸福，即使大家都已不在IT圈打拼。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/10/nagle-suan-fa/">Nagle 算法</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-10T16:55:00+08:00" pubdate data-updated="true">Oct 10<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/10/nagle-suan-fa/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在各种场合看到涉及网络通讯的代码时,总会到到TCP_NODELAY的设置,也就是绕过nagle算法,虽然了解这个算法的基本原理,但一直没有机会追根述源,看wikipedia上关于nagle算法的介绍,很详细,所以也懒得分析,直接简单翻译并记录一下该算法,以免后续总问自己这算法到底能功能用在哪?</p>
-
-<h2>介绍</h2>
-
-<p>nagle算法以其发明者john nagle命名,该算法通过减少在网络上传输的包来改进网络上传输的效率.</p>
-
-<p>nagle在文档:Congestion Control in IP/TCP Internetworks中描述了所谓的&#8221;small packet problem&#8221;, 即当一个应用重复发送小块数据,通常大小只有1个byte.TCP的包体中有40byte的header(20byte的TCP信息,20byte的ipv4信息),而这会导致41个byte的包只有一个byte的有用信息,这是一个巨大的开销.这种情况常常出现在使用telnet会话时大部分键盘输入会生成一个byte有效数据并被立即传输时,更坏的是在慢速网络环境下,大量这样的包会在同一时间传输,会潜在的导致拥塞崩溃.</p>
-
-<h2>pseudocode</h2>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="k">new</span> <span class="n">data</span> <span class="n">to</span> <span class="n">send</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">the</span> <span class="n">window</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="n">MSS</span> <span class="n">and</span> <span class="n">available</span> <span class="n">data</span> <span class="n">is</span> <span class="o">&gt;=</span> <span class="n">MSS</span>
-</span><span class='line'>      <span class="n">send</span> <span class="n">complete</span> <span class="n">MSS</span> <span class="n">segment</span> <span class="n">now</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>      <span class="k">if</span> <span class="n">there</span> <span class="n">is</span> <span class="n">unconfirmed</span> <span class="n">data</span> <span class="n">still</span> <span class="n">in</span> <span class="n">the</span> <span class="n">pipe</span>
-</span><span class='line'>        <span class="n">enqueue</span> <span class="n">data</span> <span class="n">in</span> <span class="n">the</span> <span class="n">buffer</span> <span class="n">until</span> <span class="n">an</span> <span class="n">acknowledge</span> <span class="n">is</span> <span class="n">received</span>
-</span><span class='line'>      <span class="k">else</span>
-</span><span class='line'>        <span class="n">send</span> <span class="n">data</span> <span class="n">immediately</span>
-</span><span class='line'>      <span class="n">end</span> <span class="k">if</span>
-</span><span class='line'>    <span class="n">end</span> <span class="k">if</span>
-</span><span class='line'>  <span class="n">end</span> <span class="k">if</span>    
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>问题</h2>
-
-<p>80年代初,有个组织提交了名为TCP Delayed Acknowledgment的算法,该算法会合并多个ack包以达到提升效率的作用,最大的ack延迟为500ms.当两个算法同时启用时,出现write-write-read的顺序时则由于第二个写可能的延迟导致read时间过长.由于这个原因,TCP实现提供了一些应用接口来关闭nagle算法,通常这个可选项名为TCP_NODELAY.(关于write-write-read带来的问题还有些不是很清晰)</p>
-
-<p>nagle算法适用于任何大小的数据,如果一次写请求需要发送的包跨度为 2n packets,则最后的数据包会被buffer,直到收到前一个包的ack消息,延迟会增加上百ms,而且是由于这个算法导致了额外的开销.如果数据大于一个packet时,requester或responser最好都关闭该算法.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; Older</a>
@@ -718,11 +756,19 @@ Btree levels: 4
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/互联网'>互联网 (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (3)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/目标'>目标 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/07/08/30zhi-hou-de-zhi-xiang/">30之后的志向</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/27/po-ju-zhe/">破局者</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/04/17/ji-suan-mi-ji-xing-cao-zuo-you-hua-tan-jiu/">&#8216;计算密集型操作优化探究&#8217;</a>
@@ -734,14 +780,6 @@ Btree levels: 4
     
       <li class="post">
         <a href="/blog/2013/01/28/ye-ye-de-liang-san-shi/">爷爷的两三事</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/15/is-parallel-programming-hard-2/">Is parallel programming hard? - 2 </a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing/">分支预测的迷思</a>
       </li>
     
   </ul>

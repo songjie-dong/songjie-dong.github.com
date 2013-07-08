@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="最近一直在使用阅读软件,一直在用的网易云阅读,试用了zaker,体验了flipboard,记录一下自己的体会 使用需求 看书,涉及自传,心理学,偏通俗一点的哲学书,名著等等(碎片时间和非舒适环境阅读),看资讯,涉及科技,工业设计,互联网,创业,技术,看英文,最好有高质量的英语资讯, &hellip;">
+  <meta name="description" content="android关于dalvik的资料显得不是很全,像我这种写服务端代码写惯了的,突然换到android下面写java代码,基本也算是两眼一抹黑. 2010 google I/O关于加入JIT的介绍,而后则很少有介绍后续的发展,搞的我很难写代码,以前的知识都成了写代码的习惯思考, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +85,159 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/09/14/dalvik-gckai-pian/">Android菜鸟的吐槽3</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-14T15:08:00+08:00" pubdate data-updated="true">Sep 14<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/09/14/dalvik-gckai-pian/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>android关于dalvik的资料显得不是很全,像我这种写服务端代码写惯了的,突然换到android下面写java代码,基本也算是两眼一抹黑.</p>
+
+<p>2010 google I/O关于加入JIT的介绍,而后则很少有介绍后续的发展,搞的我很难写代码,以前的知识都成了写代码的习惯思考,而且JVM关于JIT的优化相对成熟,处于发展而不是变化的阶段,但是android的性能最佳实践中提到的东西,貌似随着版本的发布有不少的变化,所以很难作为代码优化的参考.关于gc方面的资料就更加的少,特别是涉及到细节,只能看代码和借助内部的一些debug工具,感觉上dalvik未来还会有很多的发展和改进空间..</p>
+
+<p>这几天查阅了一些关于dalvik的资料,blog,还没深入看代码,先提供一些所谓的直观感觉,后续有空在dalvik的gc部分代码基础上再记录一些细节吧.(开篇也许就是结局篇)</p>
+
+<h3>Algorithm</h3>
+
+<p>貌似使用了基本的mark-and-sweep来实现,但是没有compact,很经典的实现,早期的IBM JDK1.4就采用了该算法,提供compact和增量收集.貌似性能最佳实践中也提到了pre-thread allocation pool,降低了临时对象分配的开销,使用dlmalloc(bionic lib中的版本)来分配内存,doug lea大神再次出现了&#8230;&#8230;..<a href="http://gee.cs.oswego.edu/dl/html/malloc.html">大神的作品</a>,有些过时,但在当时看来应该是篇神作.</p>
+
+<h3>Fragmentation</h3>
+
+<p>没有compact,可能会面临fragmentation的问题,对于长时间运行的程序来说,该问题有可能存在,dlmalloc使用了chunk块来尽量避免外部fragmentation问题,出现问题只能在应用层考虑如何避免,没有查到关于后续实现generation based的信息,对于管理几十兆内存来说,mark-and-sweep应该是合理的,足以应付大多数的情况.</p>
+
+<h3>coding</h3>
+
+<p>官方关于memory的最佳实践有多大的参考价值呢?只是强调不要创建无用的对象,而刚刚提到的fragmentation问题只字未提.</p>
+
+<pre><code>Avoid Creating Unnecessary Objects
+
+Object creation is never free.A generational GC with per-thread allocation pools for temporary objects can make allocation cheaper, but allocating memory is always more expensive than not allocating memory.
+
+If you allocate objects in a user interface loop, you will force a periodic garbage collection, creating little "hiccups" in the user experience. The concurrent collector introduced in Gingerbread helps, but unnecessary work should always be avoided.
+
+Thus, you should avoid creating object instances you don't need to. Some examples of things that can help:
+
+If you have a method returning a string, and you know that its result will always be appended to a StringBuffer anyway, change your signature and implementation so that the function does the append directly, instead of creating a short-lived temporary object.
+When extracting strings from a set of input data, try to return a substring of the original data, instead of creating a copy. You will create a new String object, but it will share the char[] with the data. (The trade-off being that if you're only using a small part of the original input, you'll be keeping it all around in memory anyway if you go this route.)
+
+A somewhat more radical idea is to slice up multidimensional arrays into parallel single one-dimension arrays:
+
+An array of ints is a much better than an array of Integers, but this also generalizes to the fact that two parallel arrays of ints are also a lot more efficient than an array of (int,int) objects. The same goes for any combination of primitive types.
+If you need to implement a container that stores tuples of (Foo,Bar) objects, try to remember that two parallel Foo[] and Bar[] arrays are generally much better than a single array of custom (Foo,Bar) objects. (The exception to this, of course, is when you're designing an API for other code to access; in those cases, it's usually better to trade good API design for a small hit in speed. But in your own internal code, you should try and be as efficient as possible.)
+
+Generally speaking, avoid creating short-term temporary objects if you can. Fewer objects created mean less-frequent garbage collection, which has a direct impact on user experience.
+</code></pre>
+
+<p>我没有感觉到有啥价值,看官方介绍不如把effective java多读几遍,对大对象分配和循环内部的对象创建小心一点,热点代码注意分析.特别是对于应用会申请大内存又会销毁,这种情况可以在应用层提供大对象复用的缓存机制,避免被销毁,而是一直使用,通过应用层代码来控制大对象空间的存取.否则,随意的大对象分配和销毁对于长时间运行的App来说就是个灾难.或者就只能往NDK上面想办法了,NDK还不太了解,内存应该不计算在heap内的吧</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/09/09/android-gao-xiao-he-oozhi-jian-de-xuan-ze/">Android菜鸟的吐槽1</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-09T22:33:00+08:00" pubdate data-updated="true">Sep 9<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/09/09/android-gao-xiao-he-oozhi-jian-de-xuan-ze/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>近期一直忙于写android应用的代码,其实我没有看完过任何一本android的著作,虽然说书籍收集了也
+不少了,但很少完整的去看,有时候发现最靠谱的还是官方文档和一些实践性的书籍或者blog,通常工作
+中是遇到问题,查资料,然后解决问题,在这个过程中慢慢发现其实写android的代码很有挑战性,要关注
+的东西很多,比如:</p>
+
+<ol>
+<li><p>程序本身的高效,高效意味着更短的延迟,用户更好的体验.</p></li>
+<li><p>网络的开销,比如官方<a href="http://developer.android.com/training/efficient-downloads/efficient-network-access.html#RadioStateMachine">这篇</a>关于网络对于电量的影响</p></li>
+<li><p>异步处理,费时操作都得异步,否则UI就block了,再过几秒系统就提示无反应了,最坏的结果就是被直接拖到垃圾桶.</p></li>
+</ol>
+
+
+<p>在这里我就不说后两点的,主讲第一点,也就是程序效率的本身,高效和OO之间似乎有些矛盾,当然这种问题
+在java领域已经越来越不明显,因为java server级的JIT(Just In Time Compiler)已经为我们做了
+足够多的工作,而我们都是坐享其成,如果没有inline优化,你们敢想一个方法不超过5行吗?for循环我们
+很少去手动提取不变量了,因为JIT总是能帮我们找到hot的loop并优化掉,而一些非热点且低效代码,则被
+超强的机器性能所掩盖.而对于dalvik,情况发生了变化,一切似乎回到那个资源无比紧缺的时代,系统的设
+计需要考虑移动设备的特点和dalvik本身.</p>
+
+<p>在这个<strong>时代</strong>写代码除了算法加数据结构,我们还有很多问题要关注,因为这个时代的主流不再是孤胆英雄式的
+程序员,更多的需要依赖团队开发,对于公司来说,代码的可维护性并不比高效的分量轻多少,而在android上
+很多优化都是具有版本和硬件的亲和性,不同的版本,不同的硬件也许有完全不一样的结果,所以一个优化值不
+值得做是个需要好好思考的问题,而我个人对于这个问题的建议是:</p>
+
+<ol>
+<li><p>优化方案本身的生命力
+比如getter,setter的性能问题,早期dalvik的getter,setter确实比直接读写成员性能要差很多
+但这个优化有些逆天了,而且长远来看这种问题被内置优化的可能性较大,故在可忍受的范围内可以优化
+但不能作为普遍使用的技巧,否则就颠覆了OO的封装,随意修改私有对象状态倒是无所谓,如果是共享的
+那就&#8230;.</p></li>
+<li><p>优化是否有必要
+很多时候我们未必需要按官方的建议优化,比如绝大多数的app都不会占据太多的CPU,当然如果是一些
+游戏的话&#8230;所以我们大可不必过于的关心一些优化代码的技巧,let it go~,写出你认为更美观的代
+码才是绝大多数情况下我们要考虑的问题.</p></li>
+<li><p>如果必须要优化,泡好一杯茶,打起精神,尽量将优化对于系统整体的影响降到最低程度.</p></li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -325,135 +478,9 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/08/12/hello/">Hello</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-12T09:51:00+08:00" pubdate data-updated="true">Aug 12<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/08/12/hello/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>介于微博的极度不河蟹,改为上推,看到某人的blog发现自己out了,现在都用github搭blog了,于是我就折腾了一个,安了个新家,以下内容完全是对markdown语法的练习</p>
-
-<p>折腾了半天遇到个编码问题,不知道为啥ruby默认用了GBK,搞了半天发现term设置的GBK,而我一般用iterm&#8230;忘了这个点啊&#8230;..</p>
-
-<p>编码</p>
-
-<hr />
-
-<p>&copy;</p>
-
-<p>AT&amp;T</p>
-
-<p>标题</p>
-
-<hr />
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h1>this is title 1</h1>
-
-<h2>this is title 2</h2>
-
-<h3>this is title 3</h3>
-
-<h4>this is title 4</h4>
-
-<h5>this is title 5</h5>
-
-<h6>this is title 6</h6>
-
-<p>缩进</p>
-
-<hr />
-
-<blockquote><p>this is a blockquote</p>
-
-<blockquote><p>test</p></blockquote>
-
-<p>this is a blockquote
-with lazy mode</p></blockquote>
-
-<p>列表</p>
-
-<hr />
-
-<ul>
-<li> test</li>
-<li> test</li>
-<li><p> test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>test</p></li>
-<li>test</li>
-<li><p>test</p></li>
-<li><p>1</p></li>
-<li>2</li>
-<li><p>3</p></li>
-<li><p>so funny beginning</p></li>
-</ul>
-
-
-<p>1986. you can escape it</p>
-
-<hr />
-
-<pre><code>print "hello world!"
-</code></pre>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">print</span> <span class="s">&quot;hello world!&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>horizontal rules</h2>
-
-<hr />
-
-<hr />
-
-<hr />
-
-<h2>link</h2>
-
-<p><a href="http://dongsongjie.cn" title="Songjie Dong's homepage">I&#8217;m a link</a></p>
-
-<h2>强调</h2>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/6/">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -493,11 +520,19 @@ with lazy mode</p></blockquote>
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (2)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/互联网'>互联网 (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (3)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/目标'>目标 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/07/08/30zhi-hou-de-zhi-xiang/">30之后的志向</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/06/27/po-ju-zhe/">破局者</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/04/17/ji-suan-mi-ji-xing-cao-zuo-you-hua-tan-jiu/">&#8216;计算密集型操作优化探究&#8217;</a>
@@ -509,14 +544,6 @@ with lazy mode</p></blockquote>
     
       <li class="post">
         <a href="/blog/2013/01/28/ye-ye-de-liang-san-shi/">爷爷的两三事</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/15/is-parallel-programming-hard-2/">Is parallel programming hard? - 2 </a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/08/fen-zhi-yu-ce-de-xian-jing/">分支预测的迷思</a>
       </li>
     
   </ul>
