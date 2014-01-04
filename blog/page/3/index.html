@@ -9,7 +9,7 @@
   <meta name="author" content="Songjie Dong">
 
   
-  <meta name="description" content="迷思 “Is Parallel Programming Hard, And, If So, What Can You Do About It?”,这本书很久就知道,一直没怎么看过,多半对于并行的理解来自于工作中需要对java处理并行的方式有一定的了解,所以看了不少关于JVM内存模型,线程安全控制, &hellip;">
+  <meta name="description" content="所谓字节序也就是字节在内存中存放的顺序,分为大端(big endian,低位存放高字节)和小端(little endian,低位存放低字节),再来又有主机序和网络序之说,主机序就是当前主机的字节序,说白点就是CPU的字节序,而CPU的字节序由于历史原因,分为不同的阵营,intel是小端,摩托, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +85,94 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/11/07/zi-jie-xu-yu-java/">字节序与java</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-07T01:13:00+08:00" pubdate data-updated="true">Nov 7<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/11/07/zi-jie-xu-yu-java/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>所谓字节序也就是字节在内存中存放的顺序,分为大端(big endian,低位存放高字节)和小端(little endian,低位存放低字节),再来又有主机序和网络序之说,主机序就是当前主机的字节序,说白点就是CPU的字节序,而CPU的字节序由于历史原因,分为不同的阵营,intel是小端,摩托,IBM,SUN则是大端,至于java,不用说,肯定得站对队伍了.使用c语言可以很快速的判断当前机器的endian,int i = 1 变量强转char*,这样可以取到低位值判断是否任然等于1即可.网络序就是在网络传输过程中的顺序,基于未知原因(有人说是抛硬币决定),网络序固定为big endian,不管怎样,固定更加有利于我们程序的健壮性,因为我们只需要处理一种情况,同时也可以节约码农的时间,避免诡异的错误.</p>
+
+<p>废话完毕,说说java中的字节序,网上传言java都是big endian,这个观点本身由于说的太绝对是有一些误导性的,特别是对于以上内容了解不细致的时候,其实作为java来说只是在规范中约定了class文件和操作数都是big endian,同时也有人补充说明所有的流都是big endian,<a href="http://docs.oracle.com/javase/6/docs/api/java/nio/ByteOrder.html#nativeOrder%28%29">nativeOrder</a>可以读取当前机器的字节序作为参考,只在性能极其敏感的场景在所分配的direct buffer实现与硬件一致的字节序.所以在java中我们定义一个int变量并赋值后,变量本身的字节序任然取决于硬件本身,不要被误导了.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
+        <h1 class="entry-title"><a href="/blog/2012/11/06/ci-shi-ci-ke/">此时此刻</a></h1>
+      
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-06T15:05:00+08:00" pubdate data-updated="true">Nov 6<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/11/06/ci-shi-ci-ke/#disqus_thread">Comments</a>
+		 
+	  </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近看了钱老说的一句话:一个人,到了20岁还不狂，这个人是没出息的；到了30岁还狂，也是没出息的。</p>
+
+<p>以此句开头颇有意味,20岁的时候我还没狂,只是把无处安放的青春献给了网吧,一晃就29岁啦,赶上了20岁狂的那拨人,但还是隐隐感到有危机.</p>
+
+<p>有时候感觉到到有心无力,特别是每当把问题研究到比较深入领域时,我总是会感觉有某种障碍在阻拦我的前进,于是我在近一两年开始有意识的结构化很多计算机本知识,回归到最原始的途径来学习,如今看来确实小有收获,但知识体系尚未完全建立,很多常识性的知识还有待进一步的积累,但怎奈环境一直不够给力.</p>
+
+<p>如此情况下,我看30岁是不可能狂的,这样也好,应了钱老的后半句句话,否则真没出息怎么办,O(∩_∩)O~,我要从新扬帆起航,虽然知道放弃自己所熟悉的领域,去探索未知的世界,对于这个世俗的世界来说是个极大的风险,但我还是想义无反顾的去尝试让自己有更多的可能性.此时此刻,为了以后的出息而努力吧.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -570,150 +658,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/bdbxue-xi-bi-ji/">BDB学习笔记</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T11:37:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/bdbxue-xi-bi-ji/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>介绍</h2>
-
-<p>Berkeley DB (DB)是一个高性能的，嵌入数据库，和C语言，C++，Java，Perl，Python，PHP，Tcl以及其他很多语言都有绑定。Berkeley DB可以保存任意类型的键/值对，而且可以为一个键保存多个数据。Berkeley DB可以支持数千的并发线程同时操作数据库，支持最大256TB的数据，广泛用于各种操作系统包括大多数Unix类操作系统和Windows操作系统以及实时操作系统。</p>
-
-<p>在工作中使用的是java版本的bdb( Berkeley DB 以下简称为bdb)，主要用来存储计算结果提供给业务系统访问，比如数据挖掘的结果，这类数据定期会刷新，访问形式单一，存在数据库有点大材小用，另外就是存储大量的计算中间结果。总体来说bdb的性能非常不错，但在使用时还是遇到了一些问题，总结一些经验教训</p>
-
-<h3>问题1：定期build大量计算结果</h3>
-
-<p>实际使用时，写入千万数据后，写入性能急剧下降，但硬盘还在飞转，调节了很多的系统参数，关闭了事务，调大了btree索引缓存(根据bdb内部的DbCacheSize工具调节)，jvm启动参数等等(怀疑是fgc的问题)，都没有解决问题，最后调节了写入数据的顺序才解决了问题，一开始我们没有对写入数据的key排序，而随机写入大量数据导致了btree索引性能的下降，改为顺序写入后，问题解决。那如何解释硬盘飞转呢，其实是由于写操作频繁触发btree结构调整导致。</p>
-
-<h3>问题2：性能测试出现少量lock timeout，软硬件环境不同出现的次数也不同</h3>
-
-<p>默认的locktimeout是500ms，而我们在并发读写的性能测试时出现了少量的timeout情况，32位环境（jdk1.5）下较少，64位环境(jdk1.6)下较多，500ms的timeout，在非高性能要求的环境下，貌似还是短了点。问题是为什么对于不同的环境，出现timeout的次数差距较明显，多次测试发现32位环境出现的较少，64位环境出现的较多，com.sleepycat.je.util.DbCacheSize这个工具让我发现了一些线索，原来我一直以为这个工具就是粗略根据分支节点大概的大小，总数据量，key大小就可以帮助我们计算出大致的索引cache size，比如1000万数据，key长20byte的cache size：</p>
-
-<pre><code>Inputs: records=10000000 keySize=20 dataSize=8092 nodeMax=128 density=80% overhead=10%
-Cache Size      Btree Size  Description
-871,284,622     784,156,160  Minimum, internal nodes only  
-1,180,450,133   1,062,405,120  Maximum, internal nodes only  
-91,537,951,288  82,384,156,160  Minimum, internal nodes and leaf nodes  
-91,847,116,800  82,662,405,120  Maximum, internal nodes and leaf nodes  
-Btree levels: 4 
-</code></pre>
-
-<p>这个是在mac下的测试结果，而在32位的ubuntu下测试minimum internal nodes需要501M，主要的原因是由于在不同的环境对应的java对象占用内存大小不一致，而java本身没有提供动态检测对象占用内存大小的方法，在bdb中MemoryBudget类里面定义了不同环境下对应的常用对象的大小，所以，如果用同样的cachesize配置，在不同的环境下会表现出不同的性能，因为如果设置小了会导致部分索引的操作无法命中缓存，性能会有所下降，所以我推测timeout的频率不同的原因是由于固定的cachesize在不同的环境性能也会不同而导致。</p>
-
-<h3>问题3：数据build需要注意的</h3>
-
-<p>对于大数据量写入bdb，同时需要把数据文件跨地区传输时，有一个小的tips，就是在你build完数据以后，close environment后，重新开启一个只读的environment，设置启动参数：</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>
-</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">env</span><span class="o">.</span><span class="na">runCleaner</span> <span class="err">＝</span> <span class="kc">false</span>
-</span><span class='line'><span class="n">je</span><span class="o">.</span><span class="na">cleaner</span><span class="o">.</span><span class="na">minUtilization</span> <span class="err">＝</span> <span class="mi">90</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">while</span> <span class="o">(</span><span class="n">environment</span><span class="o">.</span><span class="na">cleanLog</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;clean log &quot;</span><span class="o">);</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'><span class="n">CheckpointConfig</span> <span class="n">cleanCheckpointConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CheckpointConfig</span><span class="o">()</span>
-</span><span class='line'><span class="n">cleanCheckpointConfig</span><span class="o">.</span><span class="na">setForce</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
-</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">checkpoint</span><span class="o">(</span><span class="n">cleanCheckpointConfig</span><span class="o">);</span>
-</span><span class='line'><span class="n">environment</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>加上如上代码，这样就可以清除掉大部分废弃的log信息，把文件缩小，这样传输时间会省不少，特别在带宽受限的情况下。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <!-- Now we're back to normal posts. Note the links used under href in both headers.-->
-        <h1 class="entry-title"><a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/">阿里入职培训的感受</a></h1>
-      
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-11T11:30:00+08:00" pubdate data-updated="true">Oct 11<span>th</span>, 2012</time>
-        
-         | <a href="/blog/2012/10/11/a-li-ru-zhi-pei-xun-de-gan-shou/#disqus_thread">Comments</a>
-		 
-	  </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>短暂的百年阿里之旅，仿佛让我又回到了大学时代，大家一起做游戏，一起感悟人生，一起体会阿里的价值观，也留下了很多难忘的回忆。</p>
-
-<p>在这里我结识了一帮朋友，大家一起在游戏中，在讲师的各种故事中慢慢的体会到什么是客户第一，团队合作，拥抱变化，激情，敬业，诚信。为了小组最后的价值观表演我们连续两天排练到很晚，回家睡觉时都两点了，最后我还献出了人生中第一次的反串（感觉阿里人都好这口），难忘拓展时大家挺着烈日完成了一个个的任务，彼此信任，互相鼓励，我所在的团队还拿到了最后的冠军，我也得到了一枚小太阳虽然这枚小太阳我弄丢了，但是团队中每一个成员都没有因此责怪我。另外对于团队这两个字的我现在有了更深刻的认识，那就是行动前需要周密的计划与决策，一旦决定，团队必须坚决的执行，除非决策者提出新的方案，只有这样才能保证在高标准，高压力的工作中不断的前进。</p>
-
-<p>对于工作三年的我来说，也经历了很多的事，心中的那个杯子早已不再是空的，我有自己的价值观对于各种事情都有自己很主观的看法，我很明确自己的目标。在培训期间我一直在思考，因为在这里，在阿里有些不一样的东西，有些是我早已忘却的宝贵东西，现在我又重新找到了，很庆幸我能够参加这次培训，它给了我很多，很多。。。</p>
-
-<p>David说了一个字，我印象深刻，那就是德字，在目前的中国，乃至放眼全球，有多少企业能做到这个德字，又有多少企业家在慢慢的丢失掉自己的德。百年阿里，这是个伟大的事业，我也愿意与所有的阿里同仁们一起为这个事业添砖加瓦！从现在开始我任然不是空杯，只是杯子里的水不再浑浊。</p>
-
-<hr />
-
-<p>这篇旧文很可爱&#8230;.希望我能永远保持有这样的心境</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; Older</a>
@@ -756,11 +700,19 @@ Btree levels: 4
 
 <section>
   <h1>Categories</h1>
-    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/互联网'>互联网 (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (3)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/目标'>目标 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
+    <ul id="category-list"><li><a href='/blog/categories/algorithm'>algorithm (1)</a></li><li><a href='/blog/categories/android'>android (2)</a></li><li><a href='/blog/categories/app'>app (1)</a></li><li><a href='/blog/categories/architecture'>architecture (1)</a></li><li><a href='/blog/categories/berkeley-db'>Berkeley DB (1)</a></li><li><a href='/blog/categories/branch-predictor'>branch predictor (1)</a></li><li><a href='/blog/categories/c'>c (1)</a></li><li><a href='/blog/categories/cas'>cas (1)</a></li><li><a href='/blog/categories/dag'>dag (1)</a></li><li><a href='/blog/categories/dalvik'>dalvik (1)</a></li><li><a href='/blog/categories/debug'>debug (1)</a></li><li><a href='/blog/categories/endian'>endian (1)</a></li><li><a href='/blog/categories/flipboard'>flipboard (1)</a></li><li><a href='/blog/categories/fp'>FP (1)</a></li><li><a href='/blog/categories/fragmantation'>fragmantation (1)</a></li><li><a href='/blog/categories/gc'>gc (1)</a></li><li><a href='/blog/categories/git'>git (1)</a></li><li><a href='/blog/categories/java'>java (1)</a></li><li><a href='/blog/categories/jit'>jit (1)</a></li><li><a href='/blog/categories/jvm'>JVM (1)</a></li><li><a href='/blog/categories/life'>life (1)</a></li><li><a href='/blog/categories/ltrace'>ltrace (1)</a></li><li><a href='/blog/categories/malloc'>malloc (2)</a></li><li><a href='/blog/categories/memory'>memory (1)</a></li><li><a href='/blog/categories/netease'>netease (1)</a></li><li><a href='/blog/categories/network'>network (1)</a></li><li><a href='/blog/categories/oop'>OOP (1)</a></li><li><a href='/blog/categories/parallel'>parallel (1)</a></li><li><a href='/blog/categories/perf'>perf (1)</a></li><li><a href='/blog/categories/performance'>performance (5)</a></li><li><a href='/blog/categories/profile'>profile (1)</a></li><li><a href='/blog/categories/protocol-buffer'>protocol buffer (1)</a></li><li><a href='/blog/categories/reader'>reader (1)</a></li><li><a href='/blog/categories/system'>system (1)</a></li><li><a href='/blog/categories/tcp'>TCP (1)</a></li><li><a href='/blog/categories/vcs'>vcs (1)</a></li><li><a href='/blog/categories/weak-reference'>weak reference (1)</a></li><li><a href='/blog/categories/zaker'>zaker (1)</a></li><li><a href='/blog/categories/互联网'>互联网 (1)</a></li><li><a href='/blog/categories/公共子表达式'>公共子表达式 (1)</a></li><li><a href='/blog/categories/分支预测'>分支预测 (1)</a></li><li><a href='/blog/categories/回忆'>回忆 (1)</a></li><li><a href='/blog/categories/年终总结'>年终总结 (1)</a></li><li><a href='/blog/categories/并行编程'>并行编程 (1)</a></li><li><a href='/blog/categories/序列化'>序列化 (1)</a></li><li><a href='/blog/categories/思考'>思考 (3)</a></li><li><a href='/blog/categories/性能'>性能 (1)</a></li><li><a href='/blog/categories/技术分析'>技术分析 (1)</a></li><li><a href='/blog/categories/操作系统'>操作系统 (1)</a></li><li><a href='/blog/categories/目标'>目标 (1)</a></li><li><a href='/blog/categories/编码'>编码 (1)</a></li><li><a href='/blog/categories/编译优化'>编译优化 (1)</a></li><li><a href='/blog/categories/翻译'>翻译 (2)</a></li><li><a href='/blog/categories/计算'>计算 (1)</a></li><li><a href='/blog/categories/计算机体系结构'>计算机体系结构 (1)</a></li><li><a href='/blog/categories/通讯协议'>通讯协议 (1)</a></li><li><a href='/blog/categories/阿里'>阿里 (1)</a></li><li><a href='/blog/categories/高性能'>高性能 (1)</a></li></ul>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/01/04/2013/">2013</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/30/2013-que-ding-fang-xiang-de-%5B%3F%5D-nian/">2013-确定方向的一年</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/07/08/30zhi-hou-de-zhi-xiang/">30之后的志向</a>
@@ -772,14 +724,6 @@ Btree levels: 4
     
       <li class="post">
         <a href="/blog/2013/04/17/ji-suan-mi-ji-xing-cao-zuo-you-hua-tan-jiu/">&#8216;计算密集型操作优化探究&#8217;</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/04/01/big-list-of-20-common-bottlenecks/">Big List Of 20 Common Bottlenecks</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/01/28/ye-ye-de-liang-san-shi/">爷爷的两三事</a>
       </li>
     
   </ul>
@@ -796,7 +740,7 @@ Btree levels: 4
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Songjie Dong -
+  Copyright &copy; 2014 - Songjie Dong -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> Theme by <a href="http://melandri.net">@alemelandri</a></span>
 </p>
 
